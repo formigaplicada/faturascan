@@ -2,10 +2,501 @@
 <html lang="pt">
 <head>
   <meta charset="UTF-8">
-  <meta http-equiv="refresh" content="0; url=/app/">
-  <title>FaturaScan</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FaturaScan — Faturas sem esforço</title>
+  <meta name="description" content="A solução para contabilistas que querem receber as faturas dos clientes directamente no Google Drive, sem apps, sem contas, sem complicações.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #c8f060;
+      --accent-dark: #9abe3a;
+      --ink: #0f0f0d;
+      --ink2: #1e1e1a;
+      --paper: #f5f4ef;
+      --paper2: #eceae2;
+      --muted: #6e6e60;
+      --border: #d8d6ce;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--paper);
+      color: var(--ink);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.025; pointer-events: none; z-index: 9999;
+    }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(245,244,239,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
+    }
+    .nav-logo { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; color: var(--ink); text-decoration: none; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+    .nav-logo span { color: var(--muted); font-weight: 300; font-style: italic; }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { font-size: 12px; color: var(--muted); text-decoration: none; letter-spacing: 0.5px; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-cta { background: var(--ink) !important; color: var(--accent) !important; padding: 8px 18px; border-radius: var(--radius-sm); font-weight: 500; }
+    .nav-cta:hover { opacity: 0.85; }
+
+    /* HERO */
+    .hero-wrap { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+    .hero {
+      min-height: 90vh; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 80px 0; text-align: center; position: relative;
+    }
+    .hero-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(200,240,96,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--ink); color: var(--accent);
+      padding: 6px 16px; border-radius: 20px;
+      font-size: 11px; letter-spacing: 1.5px; margin-bottom: 32px;
+      animation: fadeUp 0.6s ease both;
+    }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+    h1 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(42px, 7vw, 76px);
+      font-weight: 600; line-height: 1.05;
+      letter-spacing: -2px; max-width: 800px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+    h1 em { font-style: italic; font-weight: 300; color: var(--muted); }
+    h1 mark { background: var(--accent); color: var(--ink); padding: 2px 10px; border-radius: 6px; font-style: normal; }
+    .hero-sub {
+      font-size: 15px; color: var(--muted); max-width: 520px;
+      line-height: 1.7; margin-bottom: 48px;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; animation: fadeUp 0.6s 0.3s ease both; }
+    .btn-primary {
+      background: var(--ink); color: var(--accent);
+      padding: 16px 32px; border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+      letter-spacing: 0.5px; text-decoration: none; border: none; cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-secondary {
+      background: transparent; color: var(--ink);
+      padding: 16px 32px; border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 13px;
+      letter-spacing: 0.5px; text-decoration: none;
+      border: 1.5px solid var(--border); cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-secondary:hover { border-color: var(--ink); transform: translateY(-1px); }
+    .hero-note { margin-top: 20px; font-size: 11px; color: var(--muted); animation: fadeUp 0.6s 0.4s ease both; }
+    .hero-note strong { color: var(--accent-dark); }
+
+    /* MOCK PHONE */
+    .hero-preview { margin-top: 56px; width: 100%; max-width: 300px; animation: fadeUp 0.8s 0.5s ease both; }
+    .mock-phone { background: var(--ink); border-radius: 24px; padding: 20px 16px; border: 2px solid #2e2e28; box-shadow: 0 40px 80px rgba(0,0,0,0.18); }
+    .mock-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; border-bottom: 1px solid #2e2e28; margin-bottom: 14px; }
+    .mock-logo-text { font-family: 'Fraunces', serif; font-size: 16px; color: var(--accent); font-weight: 600; }
+    .mock-logo-text span { color: #6e6e60; font-weight: 300; font-style: italic; }
+    .mock-dots { display: flex; gap: 5px; }
+    .mock-dot { width: 5px; height: 5px; border-radius: 50%; background: #3e3e34; }
+    .mock-dot.on { background: var(--accent); }
+    .mock-step { background: #242420; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+    .mock-step-icon { width: 34px; height: 34px; border-radius: 8px; background: #1a1a16; border: 1px solid #2e2e28; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .mock-step-icon.active { border-color: var(--accent); }
+    .mock-step-label { font-size: 11px; color: #e8e8e0; }
+    .mock-step-sub { font-size: 10px; color: #6e6e60; margin-top: 2px; }
+    .mock-pill { display: inline-block; background: rgba(200,240,96,0.15); color: var(--accent); border: 1px solid rgba(200,240,96,0.3); border-radius: 20px; padding: 2px 8px; font-size: 10px; margin-top: 4px; }
+
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)} }
+
+    /* SECTIONS */
+    .section-wrap { max-width: 1100px; margin: 0 auto; padding: 100px 32px; }
+    .divider { max-width: 1100px; margin: 0 auto; height: 1px; background: var(--border); }
+    .section-label { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
+    .section-title { font-family: 'Fraunces', serif; font-size: clamp(28px, 4vw, 44px); font-weight: 600; line-height: 1.15; letter-spacing: -1px; margin-bottom: 16px; }
+    .section-title em { font-style: italic; font-weight: 300; color: var(--muted); }
+    .section-sub { font-size: 14px; color: var(--muted); max-width: 480px; line-height: 1.7; }
+
+    /* STEPS */
+    .steps-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; margin-top: 56px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .step-card { background: white; padding: 36px 32px; transition: background 0.2s; }
+    .step-card:nth-child(2) { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+    .step-card:hover { background: #fafaf7; }
+    .step-num { font-family: 'Fraunces', serif; font-size: 52px; font-weight: 600; color: var(--paper2); line-height: 1; margin-bottom: 16px; letter-spacing: -2px; }
+    .step-icon { width: 44px; height: 44px; background: var(--ink); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+    .step-title { font-size: 15px; font-weight: 500; margin-bottom: 8px; }
+    .step-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
+
+    /* AUDIENCE */
+    .audience-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 56px; }
+    .audience-card { border-radius: var(--radius); padding: 40px 36px; }
+    .audience-card.dark { background: var(--ink); color: white; }
+    .audience-card.light { background: white; border: 1px solid var(--border); }
+    .audience-tag { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-bottom: 24px; }
+    .audience-card.dark .audience-tag { background: rgba(200,240,96,0.12); color: var(--accent); border: 1px solid rgba(200,240,96,0.25); }
+    .audience-card.light .audience-tag { background: var(--paper2); color: var(--muted); }
+    .audience-title { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 600; line-height: 1.2; margin-bottom: 24px; letter-spacing: -0.5px; }
+    .audience-card.dark .audience-title { color: white; }
+    .audience-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .audience-list li { font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+    .audience-card.dark .audience-list li { color: #a0a090; }
+    .audience-card.light .audience-list li { color: var(--muted); }
+    .check { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; font-size: 10px; }
+    .audience-card.dark .check { background: rgba(200,240,96,0.15); color: var(--accent); }
+    .audience-card.light .check { background: var(--paper2); color: var(--ink); }
+
+    /* PRICING */
+    .pricing-wrap { background: var(--ink2); border-radius: 24px; padding: 80px 60px; max-width: 1100px; margin: 0 auto; }
+    .trial-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(200,240,96,0.1); border: 1px solid rgba(200,240,96,0.2); color: var(--accent); padding: 10px 20px; border-radius: 20px; font-size: 12px; margin-top: 20px; margin-bottom: 56px; }
+    .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .plan-card { border-radius: var(--radius); padding: 36px 32px; }
+    .plan-card.standard { background: #242420; border: 1px solid #2e2e28; }
+    .plan-card.pro { background: var(--accent); }
+    .plan-name { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+    .plan-card.standard .plan-name { color: #6e6e60; }
+    .plan-card.pro .plan-name { color: rgba(0,0,0,0.5); }
+    .plan-price { font-family: 'Fraunces', serif; font-size: 52px; font-weight: 600; letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
+    .plan-card.standard .plan-price { color: white; }
+    .plan-card.pro .plan-price { color: var(--ink); }
+    .plan-period { font-size: 12px; margin-bottom: 8px; }
+    .plan-card.standard .plan-period { color: #6e6e60; }
+    .plan-card.pro .plan-period { color: rgba(0,0,0,0.5); }
+    .plan-annual { font-size: 12px; padding: 5px 12px; border-radius: 6px; display: inline-block; margin-bottom: 28px; }
+    .plan-card.standard .plan-annual { background: rgba(200,240,96,0.1); color: var(--accent); }
+    .plan-card.pro .plan-annual { background: rgba(0,0,0,0.1); color: var(--ink); }
+    .plan-divider { height: 1px; margin-bottom: 24px; }
+    .plan-card.standard .plan-divider { background: #2e2e28; }
+    .plan-card.pro .plan-divider { background: rgba(0,0,0,0.12); }
+    .plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+    .plan-features li { font-size: 13px; display: flex; gap: 10px; }
+    .plan-card.standard .plan-features li { color: #a0a090; }
+    .plan-card.pro .plan-features li { color: var(--ink); }
+    .plan-check { flex-shrink: 0; }
+    .plan-card.standard .plan-check { color: var(--accent); }
+    .plan-card.pro .plan-check { color: rgba(0,0,0,0.4); }
+    .btn-plan {
+      width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+      cursor: pointer; letter-spacing: 0.5px; transition: opacity 0.15s, transform 0.15s;
+      text-align: center; text-decoration: none; display: block;
+    }
+    .btn-plan:hover { opacity: 0.85; transform: translateY(-1px); }
+    .plan-card.standard .btn-plan { background: var(--accent); color: var(--ink); }
+    .plan-card.pro .btn-plan { background: var(--ink); color: var(--accent); }
+
+    /* CONTACT */
+    .contact-wrap { max-width: 640px; margin: 0 auto; padding: 100px 32px 0; }
+    .form-group { margin-bottom: 20px; }
+    .form-label { font-size: 11px; letter-spacing: 1px; color: var(--muted); display: block; margin-bottom: 8px; }
+    .form-input, .form-textarea { width: 100%; padding: 14px 16px; background: white; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Mono', monospace; font-size: 13px; color: var(--ink); transition: border-color 0.2s; outline: none; }
+    .form-input:focus, .form-textarea:focus { border-color: var(--ink); }
+    .form-textarea { resize: vertical; min-height: 120px; }
+    .form-submit { width: 100%; padding: 16px; background: var(--ink); color: var(--accent); border: none; border-radius: var(--radius-sm); font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; cursor: pointer; letter-spacing: 0.5px; transition: opacity 0.15s, transform 0.15s; }
+    .form-submit:hover { opacity: 0.85; transform: translateY(-1px); }
+    .form-success { display: none; text-align: center; padding: 48px; background: white; border-radius: var(--radius); border: 1px solid var(--border); }
+    .form-success-icon { font-size: 40px; margin-bottom: 16px; }
+    .form-success-title { font-family: 'Fraunces', serif; font-size: 24px; margin-bottom: 8px; }
+    .form-success-desc { font-size: 13px; color: var(--muted); }
+
+    /* FOOTER */
+    .footer-wrap { max-width: 1100px; margin: 0 auto; padding: 40px 32px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); margin-top: 80px; }
+    .footer-logo { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: var(--ink); text-decoration: none; }
+    .footer-logo span { color: var(--muted); font-weight: 300; font-style: italic; }
+    .footer-copy { font-size: 11px; color: var(--muted); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 11px; color: var(--muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--ink); }
+
+    /* RESPONSIVE */
+    @media (max-width: 720px) {
+      nav { padding: 0 20px; }
+      .nav-links { display: none; }
+      .hero-wrap, .section-wrap, .contact-wrap { padding-left: 20px; padding-right: 20px; }
+      .steps-grid, .audience-grid, .pricing-grid { grid-template-columns: 1fr; }
+      .step-card:nth-child(2) { border-left: none; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+      .pricing-wrap { padding: 48px 24px; border-radius: 16px; }
+      .footer-wrap { flex-direction: column; gap: 16px; text-align: center; }
+      .footer-links { justify-content: center; }
+    }
+
+    /* REVEAL */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+  </style>
 </head>
 <body>
-  <script>window.location.replace('/app/' + window.location.search);</script>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <svg width="18" height="22" viewBox="0 0 19 24" fill="none">
+      <rect x="1" y="1" width="17" height="22" rx="2" stroke="#c8f060" stroke-width="1.5"/>
+      <polyline points="11,1 18,8" stroke="#c8f060" stroke-width="1.5"/>
+      <rect x="3" y="11" width="4" height="4" rx="0.5" fill="#c8f060"/>
+      <rect x="9" y="11" width="2" height="2" rx="0.3" fill="#c8f060" opacity="0.7"/>
+      <rect x="13" y="11" width="2" height="2" rx="0.3" fill="#c8f060" opacity="0.7"/>
+      <rect x="3" y="16" width="2" height="2" rx="0.3" fill="#c8f060" opacity="0.7"/>
+      <rect x="7" y="15" width="3" height="3" rx="0.5" fill="#c8f060"/>
+      <line x1="1" y1="20" x2="18" y2="20" stroke="#c8f060" stroke-width="1" opacity="0.35"/>
+      <circle cx="9.5" cy="20" r="1.2" fill="#c8f060" opacity="0.9"/>
+    </svg>
+    fatura<span>scan</span>
+  </a>
+  <div class="nav-links">
+    <a href="#como-funciona">Como funciona</a>
+    <a href="#precos">Preços</a>
+    <a href="#contacto">Contacto</a>
+    <a href="/app/" class="nav-cta">Entrar na app →</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<div class="hero-wrap">
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-badge"><div class="badge-dot"></div>6 meses grátis para novos contabilistas</div>
+    <h1>As faturas dos teus clientes,<br><mark>sem esforço</mark></h1>
+    <p class="hero-sub">O cliente lê o QR code e tira uma foto. A fatura aparece directamente no teu Google Drive, organizada por cliente e mês. Sem apps para instalar, sem contas para criar.</p>
+    <div class="hero-actions">
+      <a href="#contacto" class="btn-primary">Experimentar grátis →</a>
+      <a href="#como-funciona" class="btn-secondary">Ver como funciona</a>
+    </div>
+    <p class="hero-note"><strong>6 meses grátis</strong> · até 5 clientes · até 500 faturas por cliente</p>
+    <div class="hero-preview">
+      <div class="mock-phone">
+        <div class="mock-header">
+          <div class="mock-logo-text">fatura<span>scan</span></div>
+          <div class="mock-dots"><div class="mock-dot on"></div><div class="mock-dot on"></div><div class="mock-dot"></div></div>
+        </div>
+        <div class="mock-step">
+          <div class="mock-step-icon active">✓</div>
+          <div><div class="mock-step-label">QR code lido</div><div class="mock-step-sub">NIF · Data · Total</div><div class="mock-pill">✓ validado</div></div>
+        </div>
+        <div class="mock-step">
+          <div class="mock-step-icon active">📷</div>
+          <div><div class="mock-step-label">Fotografar fatura</div><div class="mock-step-sub">Toca para abrir a câmara</div></div>
+        </div>
+        <div class="mock-step" style="opacity:0.35">
+          <div class="mock-step-icon">✅</div>
+          <div><div class="mock-step-label">Guardada no Drive</div><div class="mock-step-sub">A aguardar...</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- COMO FUNCIONA -->
+<div class="section-wrap" id="como-funciona">
+  <div class="reveal">
+    <div class="section-label">Como funciona</div>
+    <h2 class="section-title">Três passos.<br><em>Menos de 30 segundos.</em></h2>
+    <p class="section-sub">O cliente não precisa de instalar nada. Recebe um link, abre no browser do telemóvel, e é tudo.</p>
+  </div>
+  <div class="steps-grid reveal">
+    <div class="step-card">
+      <div class="step-num">01</div>
+      <div class="step-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <rect x="2" y="2" width="8" height="8" rx="1" stroke="#c8f060" stroke-width="1.5"/>
+          <rect x="12" y="2" width="8" height="8" rx="1" stroke="#c8f060" stroke-width="1.5"/>
+          <rect x="2" y="12" width="8" height="8" rx="1" stroke="#c8f060" stroke-width="1.5"/>
+          <rect x="13" y="13" width="2" height="2" fill="#c8f060"/>
+          <rect x="17" y="13" width="2" height="2" fill="#c8f060"/>
+          <rect x="13" y="17" width="2" height="2" fill="#c8f060"/>
+          <rect x="17" y="17" width="2" height="2" fill="#c8f060"/>
+        </svg>
+      </div>
+      <div class="step-title">Lê o QR code</div>
+      <p class="step-desc">O cliente aponta a câmara para o QR code da fatura. A app lê e valida os dados — NIF, data, total, ATCUD — em segundos.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">02</div>
+      <div class="step-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <rect x="2" y="4" width="18" height="14" rx="2" stroke="#c8f060" stroke-width="1.5"/>
+          <circle cx="11" cy="11" r="3" stroke="#c8f060" stroke-width="1.5"/>
+          <circle cx="11" cy="11" r="1" fill="#c8f060"/>
+        </svg>
+      </div>
+      <div class="step-title">Tira uma foto</div>
+      <p class="step-desc">Fotografa a fatura. A imagem é comprimida automaticamente. Para faturas com mais páginas, tira várias fotos seguidas.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">03</div>
+      <div class="step-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M4 12V17a1 1 0 001 1h12a1 1 0 001-1v-5" stroke="#c8f060" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M11 3v10M8 10l3 3 3-3" stroke="#c8f060" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="step-title">Aparece no teu Drive</div>
+      <p class="step-desc">A fatura fica guardada na pasta do cliente, organizada por ano e mês. Pronta para classificar no teu software de contabilidade.</p>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- PARA QUEM -->
+<div class="section-wrap">
+  <div class="reveal">
+    <div class="section-label">Para quem</div>
+    <h2 class="section-title">Feito para contabilistas.<br><em>Fácil para os clientes.</em></h2>
+  </div>
+  <div class="audience-grid reveal">
+    <div class="audience-card dark">
+      <div class="audience-tag">Para o contabilista</div>
+      <div class="audience-title">Recebe tudo organizado, sem perseguir ninguém</div>
+      <ul class="audience-list">
+        <li><span class="check">✓</span>Faturas no Google Drive, por cliente e mês</li>
+        <li><span class="check">✓</span>Verificação automática de duplicados por ATCUD</li>
+        <li><span class="check">✓</span>Dados do QR code estruturados — NIF, data, total</li>
+        <li><span class="check">✓</span>Suporte a PDF e faturas sem QR code</li>
+        <li><span class="check">✓</span>Link personalizado por cliente, sem contas</li>
+        <li><span class="check">✓</span>Processamento nocturno automático</li>
+      </ul>
+    </div>
+    <div class="audience-card light">
+      <div class="audience-tag">Para o cliente</div>
+      <div class="audience-title">Sem apps. Sem contas. Menos de 30 segundos.</div>
+      <ul class="audience-list">
+        <li><span class="check">✓</span>Abre um link no telemóvel — nada para instalar</li>
+        <li><span class="check">✓</span>Lê o QR code e tira uma foto</li>
+        <li><span class="check">✓</span>Faturas com várias páginas? Fotografa página a página</li>
+        <li><span class="check">✓</span>Funciona em iOS e Android</li>
+        <li><span class="check">✓</span>Também aceita PDFs e faturas sem QR</li>
+        <li><span class="check">✓</span>Disponível em português e inglês</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- PREÇOS -->
+<div style="padding: 0 32px 100px;" id="precos">
+  <div class="pricing-wrap">
+    <div class="reveal">
+      <div class="section-label" style="color:#6e6e60;">Preços</div>
+      <h2 class="section-title" style="color:white;">Simples e transparente.<br><em style="color:#4e4e44;">Sem surpresas.</em></h2>
+      <div class="trial-badge">✦ &nbsp;6 meses grátis · até 5 clientes · até 500 faturas por cliente</div>
+    </div>
+    <div class="pricing-grid reveal">
+      <div class="plan-card standard">
+        <div class="plan-name">Essencial</div>
+        <div class="plan-price">4,99€</div>
+        <div class="plan-period">por mês</div>
+        <div class="plan-annual">ou 49,90€/ano — poupa 2 meses</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="plan-check">✓</span>Clientes ilimitados</li>
+          <li><span class="plan-check">✓</span>Até 1.000 faturas/ano por cliente</li>
+          <li><span class="plan-check">✓</span>Google Drive organizado automaticamente</li>
+          <li><span class="plan-check">✓</span>Leitura QR com 3 níveis de fallback</li>
+          <li><span class="plan-check">✓</span>Suporte a PDF e faturas sem QR</li>
+          <li><span class="plan-check">✓</span>Fotos multi-página</li>
+        </ul>
+        <a href="#contacto" class="btn-plan">Começar grátis →</a>
+      </div>
+      <div class="plan-card pro">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">9,99€</div>
+        <div class="plan-period">por mês</div>
+        <div class="plan-annual">ou 99,90€/ano — poupa 2 meses</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="plan-check">✓</span>Tudo do Essencial</li>
+          <li><span class="plan-check">✓</span>Até 5.000 faturas/ano por cliente</li>
+          <li><span class="plan-check">✓</span>Para escritórios de maior volume</li>
+          <li><span class="plan-check">✓</span>Suporte prioritário</li>
+        </ul>
+        <a href="#contacto" class="btn-plan">Falar connosco →</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACTO -->
+<div class="contact-wrap" id="contacto">
+  <div class="reveal" style="text-align:center;margin-bottom:56px;">
+    <div class="section-label">Contacto</div>
+    <h2 class="section-title">Queres experimentar?<br><em>Fala connosco.</em></h2>
+    <p class="section-sub" style="margin:0 auto;">Entra em contacto e configuramos tudo em menos de um dia.</p>
+  </div>
+  <div id="contact-form" class="reveal">
+    <div class="form-group">
+      <label class="form-label">Nome</label>
+      <input type="text" class="form-input" id="f-nome" placeholder="O teu nome">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email</label>
+      <input type="email" class="form-input" id="f-email" placeholder="o.teu@email.pt">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Número de clientes (aproximado)</label>
+      <input type="text" class="form-input" id="f-clientes" placeholder="ex: 20">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Mensagem</label>
+      <textarea class="form-textarea" id="f-msg" placeholder="Conta-nos um pouco sobre o teu escritório..."></textarea>
+    </div>
+    <button class="form-submit" onclick="enviarForm()">Enviar mensagem →</button>
+  </div>
+  <div class="form-success" id="form-success">
+    <div class="form-success-icon">✅</div>
+    <div class="form-success-title">Mensagem enviada!</div>
+    <p class="form-success-desc">Entraremos em contacto em breve.</p>
+  </div>
+</div>
+
+<div class="footer-wrap">
+  <a href="/" class="footer-logo">fatura<span>scan</span></a>
+  <div class="footer-copy">© 2025 Formigaplicada</div>
+  <div class="footer-links">
+    <a href="#como-funciona">Como funciona</a>
+    <a href="#precos">Preços</a>
+    <a href="/app/">App</a>
+  </div>
+</div>
+
+<script>
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+function enviarForm() {
+  const nome     = document.getElementById('f-nome').value.trim();
+  const email    = document.getElementById('f-email').value.trim();
+  const clientes = document.getElementById('f-clientes').value.trim();
+  const msg      = document.getElementById('f-msg').value.trim();
+  if (!nome || !email) { alert('Por favor preenche o nome e o email.'); return; }
+  const body    = encodeURIComponent(`Nome: ${nome}\nEmail: ${email}\nClientes: ${clientes}\n\n${msg}`);
+  const subject = encodeURIComponent(`FaturaScan — contacto de ${nome}`);
+  window.location.href = `mailto:formigaplicada@gmail.com?subject=${subject}&body=${body}`;
+  document.getElementById('contact-form').style.display = 'none';
+  document.getElementById('form-success').style.display = 'block';
+}
+</script>
 </body>
 </html>

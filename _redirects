@@ -1,0 +1,2 @@
+# Redirect raiz para /app/ preservando query string
+/  /app/  302

@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>FaturaScan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f0d; --surface: #1a1a16; --surface2: #242420; --border: #2e2e28;
+      --accent: #c8f060; --text: #e8e8e0; --text-muted: #6e6e60; --text-dim: #3e3e34;
+      --success: #60f0a0; --error: #f06060; --warning: #f0a060;
+      --radius: 12px; --radius-sm: 8px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'DM Mono', monospace; overflow: hidden; }
+    body::before {
+      content: ''; position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.03; pointer-events: none; z-index: 9999;
+    }
+    #app { height: 100dvh; display: flex; flex-direction: column; max-width: 480px; margin: 0 auto; }
+
+    /* ── HEADER ── */
+    header {
+      padding: 16px 20px 14px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      flex-shrink: 0; z-index: 10; background: var(--bg); gap: 12px;
+    }
+    .logo { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; letter-spacing: -0.5px; color: var(--accent); flex-shrink: 0; }
+    .logo span { color: var(--text-muted); font-weight: 300; font-style: italic; }
+
+    .header-center { display: flex; align-items: center; gap: 10px; flex: 1; justify-content: center; }
+    .step-indicator { display: flex; gap: 6px; align-items: center; }
+    .step-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); transition: all 0.3s; }
+    .step-dot.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+    .step-dot.done { background: var(--success); }
+
+    .header-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+    /* ── SELECTOR DE IDIOMA ── */
+    .lang-selector { position: relative; }
+    .lang-btn {
+      background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 4px 8px; cursor: pointer; font-size: 18px; display: flex; align-items: center;
+      gap: 4px; transition: border-color 0.2s; color: var(--text);
+    }
+    .lang-btn:active { border-color: var(--accent); }
+    .lang-btn .lang-arrow { font-size: 9px; color: var(--text-muted); }
+    .lang-dropdown {
+      position: absolute; top: calc(100% + 6px); right: 0;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); overflow: hidden; min-width: 110px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.4); display: none; z-index: 100;
+    }
+    .lang-dropdown.open { display: block; animation: fadeIn 0.15s ease; }
+    .lang-option {
+      display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+      cursor: pointer; font-size: 13px; color: var(--text); transition: background 0.15s;
+    }
+    .lang-option:hover { background: var(--surface); }
+    .lang-option.active { color: var(--accent); }
+    .lang-option .lang-flag { font-size: 18px; }
+    .lang-option .lang-name { font-size: 12px; }
+
+    /* ── LOGO CONTABILISTA ── */
+    .logo-contabilista {
+      height: 32px; max-width: 80px; object-fit: contain; opacity: 0;
+      transition: opacity 0.3s; border-radius: 4px;
+    }
+    .logo-contabilista.loaded { opacity: 1; }
+    .logo-contabilista-placeholder { width: 32px; height: 32px; }
+
+    main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; position: relative; }
+    .screen { display: none; flex-direction: column; flex: 1; animation: fadeIn 0.3s ease; }
+    .screen.active { display: flex; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── LOADING ── */
+    #screen-loading { align-items: center; justify-content: center; gap: 16px; padding: 32px; }
+    .loading-spinner { width: 32px; height: 32px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .loading-label { font-size: 13px; color: var(--text-muted); }
+
+    /* ── INVALID ── */
+    #screen-invalid { align-items: center; justify-content: center; text-align: center; gap: 12px; padding: 32px; }
+    .error-icon { font-size: 48px; margin-bottom: 8px; }
+    .error-title { font-family: 'Fraunces', serif; font-size: 20px; color: var(--error); }
+    .error-desc { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+
+    /* ── INICIO ── */
+    #screen-inicio { align-items: stretch; justify-content: center; gap: 12px; padding: 28px 24px; }
+    .inicio-title { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 600; text-align: center; line-height: 1.2; margin-bottom: 4px; }
+    .inicio-title span { color: var(--accent); }
+    .inicio-desc { font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.6; margin-bottom: 12px; }
+    .opcao-btn {
+      width: 100%; background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 18px 20px; cursor: pointer;
+      display: flex; align-items: center; gap: 14px;
+      transition: border-color 0.2s, background 0.2s; text-align: left;
+    }
+    .opcao-btn:active { border-color: var(--accent); background: var(--surface2); }
+    .opcao-icon { font-size: 26px; flex-shrink: 0; }
+    .opcao-info { flex: 1; }
+    .opcao-titulo { font-size: 14px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+    .opcao-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+    .opcao-arrow { color: var(--text-dim); font-size: 16px; flex-shrink: 0; }
+
+    /* ── SCANNER ── */
+    #screen-scanner { position: relative; background: #000; }
+    #video { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .scanner-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+    .scanner-frame { width: 240px; height: 240px; position: relative; }
+    .scanner-frame::before, .scanner-frame::after, .scanner-corner-br, .scanner-corner-bl {
+      content: ''; position: absolute; width: 36px; height: 36px; border-color: var(--accent); border-style: solid;
+    }
+    .scanner-frame::before { top: 0; left: 0; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
+    .scanner-frame::after  { top: 0; right: 0; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
+    .scanner-corner-br { bottom: 0; right: 0; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
+    .scanner-corner-bl { bottom: 0; left: 0; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
+    .scanner-line {
+      position: absolute; left: 4px; right: 4px; height: 2px;
+      background: linear-gradient(90deg, transparent, var(--accent), transparent);
+      top: 0; animation: scan 2s ease-in-out infinite; border-radius: 1px;
+    }
+    @keyframes scan { 0% { top: 4px; } 50% { top: calc(100% - 6px); } 100% { top: 4px; } }
+    .scanner-frame.success::before, .scanner-frame.success::after,
+    .scanner-frame.success .scanner-corner-br, .scanner-frame.success .scanner-corner-bl { border-color: var(--success); transition: border-color 0.2s; }
+    .scanner-frame.success .scanner-line { animation: none; opacity: 0; }
+    .scanner-hint { position: absolute; bottom: 100px; left: 0; right: 0; text-align: center; font-size: 13px; color: rgba(255,255,255,0.7); padding: 0 24px; }
+    .scanner-hint-top { position: absolute; top: 32px; left: 0; right: 0; text-align: center; font-size: 12px; color: rgba(255,255,255,0.5); padding: 0 24px; }
+    .scanner-success-badge {
+      position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%);
+      background: rgba(96,240,160,0.15); border: 1px solid rgba(96,240,160,0.4);
+      color: var(--success); padding: 8px 20px; border-radius: 20px; font-size: 13px; display: none; white-space: nowrap;
+    }
+    .scanner-success-badge.visible { display: block; animation: fadeIn 0.3s ease; }
+    .scanner-error-badge {
+      position: absolute; bottom: 160px; left: 50%; transform: translateX(-50%);
+      background: rgba(240,96,96,0.15); border: 1px solid rgba(240,96,96,0.4);
+      color: var(--error); padding: 8px 20px; border-radius: 20px; font-size: 13px;
+      display: none; white-space: nowrap; text-align: center; max-width: 280px;
+    }
+    .scanner-error-badge.visible { display: block; animation: fadeIn 0.3s ease; }
+
+    /* ── FOTO (multi-página) ── */
+    #screen-foto { gap: 0; overflow-y: auto; }
+    .screen-top { padding: 20px 24px 16px; background: var(--surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+    .screen-top-title { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .screen-top-desc { font-size: 12px; color: var(--text-muted); }
+    .qr-mini { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    .qr-pill { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 11px; color: var(--text-muted); }
+    .qr-pill strong { color: var(--accent); font-weight: 500; }
+
+    /* Galeria de miniaturas de páginas já tiradas */
+    .paginas-galeria {
+      padding: 12px 24px 0;
+      flex-shrink: 0;
+    }
+    .paginas-galeria-label {
+      font-size: 11px; color: var(--text-muted); margin-bottom: 8px;
+    }
+    .paginas-galeria-scroll {
+      display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;
+    }
+    .paginas-galeria-scroll::-webkit-scrollbar { height: 2px; }
+    .paginas-galeria-scroll::-webkit-scrollbar-track { background: transparent; }
+    .paginas-galeria-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 1px; }
+    .pagina-thumb {
+      position: relative; flex-shrink: 0; width: 56px; height: 72px;
+      border-radius: var(--radius-sm); overflow: hidden;
+      border: 1px solid var(--accent);
+    }
+    .pagina-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .pagina-thumb-num {
+      position: absolute; bottom: 3px; right: 4px;
+      font-size: 9px; color: var(--accent); background: rgba(0,0,0,0.7);
+      padding: 1px 4px; border-radius: 3px; font-weight: 500;
+    }
+
+    /* Zona de câmara / preview atual */
+    .foto-area { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 20px 24px 16px; gap: 12px; }
+
+    /* Preview com overlay de 3 botões */
+    .foto-preview-wrap {
+      width: 100%; position: relative; background: var(--surface);
+      border: 2px solid var(--accent); border-radius: var(--radius);
+      overflow: hidden; aspect-ratio: 3/4; max-height: 320px;
+    }
+    .foto-preview-wrap img {
+      width: 100%; height: 100%; object-fit: cover; display: block;
+    }
+    /* Overlay escuro com os 3 botões ao fundo */
+    .foto-preview-actions {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.85));
+      padding: 24px 12px 12px;
+      display: flex; gap: 8px;
+    }
+    .btn-preview {
+      flex: 1; padding: 10px 6px; border: none; border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 11px; font-weight: 500;
+      cursor: pointer; transition: all 0.15s; letter-spacing: 0.3px;
+      display: flex; flex-direction: column; align-items: center; gap: 3px;
+    }
+    .btn-preview-icon { font-size: 16px; }
+    .btn-preview.retake  { background: rgba(240,96,96,0.2);  color: var(--error);   border: 1px solid rgba(240,96,96,0.3); }
+    .btn-preview.add     { background: rgba(200,240,96,0.15); color: var(--accent);  border: 1px solid rgba(200,240,96,0.3); }
+    .btn-preview.accept  { background: rgba(96,240,160,0.2); color: var(--success); border: 1px solid rgba(96,240,160,0.3); }
+    .btn-preview.retake:active  { background: rgba(240,96,96,0.35); }
+    .btn-preview.add:active     { background: rgba(200,240,96,0.3); }
+    .btn-preview.accept:active  { background: rgba(96,240,160,0.35); }
+
+    /* Estado vazio (sem foto tirada ainda) */
+    .camera-zone {
+      width: 100%; background: var(--surface); border: 2px dashed var(--border);
+      border-radius: var(--radius); aspect-ratio: 3/4; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 12px; cursor: pointer;
+      transition: border-color 0.2s; position: relative; overflow: hidden; max-height: 320px;
+    }
+    .camera-zone:active { border-color: var(--accent); }
+    .camera-icon { font-size: 36px; opacity: 0.4; }
+    .camera-label { font-size: 13px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+
+    /* PDF */
+    #screen-pdf { gap: 0; }
+    .pdf-area { flex: 1; display: flex; flex-direction: column; padding: 20px 24px; gap: 12px; overflow-y: auto; }
+    .pdf-drop-zone {
+      border: 2px dashed var(--border); border-radius: var(--radius);
+      padding: 28px 20px; display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 10px; cursor: pointer; transition: border-color 0.2s;
+    }
+    .pdf-drop-zone:active { border-color: var(--accent); }
+    .pdf-drop-icon { font-size: 28px; opacity: 0.5; }
+    .pdf-drop-label { font-size: 12px; color: var(--text-muted); text-align: center; line-height: 1.5; }
+    .pdf-list { display: flex; flex-direction: column; gap: 8px; }
+    .pdf-item { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+    .pdf-item-icon { font-size: 16px; flex-shrink: 0; }
+    .pdf-item-name { font-size: 12px; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .pdf-item-status { font-size: 11px; flex-shrink: 0; }
+    .pdf-item-status.pending { color: var(--text-muted); }
+    .pdf-item-status.loading { color: var(--accent); }
+    .pdf-item-status.ok  { color: var(--success); }
+    .pdf-item-status.dup { color: var(--warning); }
+    .pdf-item-status.err { color: var(--error); }
+
+    /* PROCESSING */
+    #screen-processing { align-items: center; justify-content: center; gap: 16px; padding: 32px; }
+    .spinner { width: 40px; height: 40px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .processing-label { font-size: 14px; color: var(--text-muted); text-align: center; }
+
+    /* RESULTADO */
+    #screen-result { align-items: center; justify-content: center; gap: 16px; padding: 32px; overflow-y: auto; }
+    .result-icon { font-size: 52px; }
+    .result-title { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 600; text-align: center; }
+    .result-title.success { color: var(--success); }
+    .result-title.error   { color: var(--error); }
+    .result-title.warning { color: var(--warning); }
+    .result-desc { font-size: 13px; color: var(--text-muted); text-align: center; line-height: 1.6; }
+    .result-data { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .result-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .result-row-label { font-size: 11px; color: var(--text-muted); flex-shrink: 0; }
+    .result-row-value { font-size: 12px; color: var(--text); text-align: right; word-break: break-word; }
+    .divider { height: 1px; background: var(--border); }
+
+    /* FOOTER */
+    footer { padding: 12px 24px 24px; border-top: 1px solid var(--border); flex-shrink: 0; background: var(--bg); z-index: 10; }
+    .btn { width: 100%; padding: 16px; border: none; border-radius: var(--radius); font-family: 'DM Mono', monospace; font-size: 13px; letter-spacing: 0.5px; cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-primary { background: var(--accent); color: #0f0f0d; font-weight: 500; }
+    .btn-primary:active { transform: scale(0.98); background: #b0d850; }
+    .btn-primary:disabled { background: var(--border); color: var(--text-muted); cursor: not-allowed; transform: none; }
+    .btn-secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); margin-top: 8px; }
+    .btn-secondary:active { transform: scale(0.98); }
+    main::-webkit-scrollbar { width: 3px; }
+    main::-webkit-scrollbar-track { background: transparent; }
+    main::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+<div id="app">
+  <header>
+    <div class="logo">fatura<span>scan</span></div>
+
+    <div class="header-center">
+      <div class="step-indicator">
+        <div class="step-dot active" id="dot-1"></div>
+        <div class="step-dot" id="dot-2"></div>
+        <div class="step-dot" id="dot-3"></div>
+      </div>
+    </div>
+
+    <div class="header-right">
+      <div class="lang-selector" id="lang-selector">
+        <button class="lang-btn" id="lang-btn" onclick="toggleLangDropdown()">
+          <span id="lang-flag-current">🇵🇹</span>
+          <span class="lang-arrow">▾</span>
+        </button>
+        <div class="lang-dropdown" id="lang-dropdown">
+          <div class="lang-option active" id="lang-opt-pt" onclick="setLang('pt')">
+            <span class="lang-flag">🇵🇹</span>
+            <span class="lang-name">Português</span>
+          </div>
+          <div class="lang-option" id="lang-opt-en" onclick="setLang('en')">
+            <span class="lang-flag">🇬🇧</span>
+            <span class="lang-name">English</span>
+          </div>
+        </div>
+      </div>
+      <div class="logo-contabilista-placeholder" id="logo-contabilista-wrap">
+        <img class="logo-contabilista" id="logo-contabilista" src="" alt="" style="display:none">
+      </div>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- LOADING -->
+    <div id="screen-loading" class="screen active">
+      <div class="loading-spinner"></div>
+      <div class="loading-label" id="loading-label">A verificar...</div>
+    </div>
+
+    <!-- INVÁLIDO -->
+    <div id="screen-invalid" class="screen">
+      <div class="error-icon">🔗</div>
+      <div class="error-title" data-i18n="invalid_title">Link inválido</div>
+      <div class="error-desc" data-i18n="invalid_desc">Este link não contém um identificador válido.<br>Contacta o teu contabilista para obteres um link correcto.</div>
+    </div>
+
+    <!-- INÍCIO -->
+    <div id="screen-inicio" class="screen">
+      <div class="inicio-title" data-i18n="inicio_title_html">O que pretendes<br><span>registar?</span></div>
+      <div class="inicio-desc" data-i18n="inicio_desc">Escolhe uma das opções abaixo</div>
+      <button class="opcao-btn" onclick="iniciarScanner()">
+        <div class="opcao-icon">📷</div>
+        <div class="opcao-info">
+          <div class="opcao-titulo" data-i18n="opcao_foto_titulo">Fotografar fatura</div>
+          <div class="opcao-desc" data-i18n="opcao_foto_desc">Lê o QR code e tira foto à fatura física</div>
+        </div>
+        <div class="opcao-arrow">›</div>
+      </button>
+      <button class="opcao-btn" onclick="mostrarScreen('sem-qr')">
+        <div class="opcao-icon">🗂️</div>
+        <div class="opcao-info">
+          <div class="opcao-titulo" data-i18n="opcao_semqr_titulo">Sem QR code</div>
+          <div class="opcao-desc" data-i18n="opcao_semqr_desc">Fatura estrangeira ou sem código QR</div>
+        </div>
+        <div class="opcao-arrow">›</div>
+      </button>
+      <button class="opcao-btn" onclick="mostrarScreen('pdf'); document.getElementById('pdf-input').click()">
+        <div class="opcao-icon">📄</div>
+        <div class="opcao-info">
+          <div class="opcao-titulo" data-i18n="opcao_pdf_titulo">Importar PDF(s)</div>
+          <div class="opcao-desc" data-i18n="opcao_pdf_desc">Selecciona um ou mais ficheiros PDF</div>
+        </div>
+        <div class="opcao-arrow">›</div>
+      </button>
+    </div>
+
+    <!-- SCANNER -->
+    <div id="screen-scanner" class="screen">
+      <video id="video" playsinline autoplay muted></video>
+      <div class="scanner-overlay">
+        <div class="scanner-hint-top" data-i18n="scanner_hint_top">Aponta para o QR code da fatura</div>
+        <div class="scanner-frame" id="scanner-frame">
+          <div class="scanner-corner-br"></div>
+          <div class="scanner-corner-bl"></div>
+          <div class="scanner-line"></div>
+        </div>
+        <div class="scanner-success-badge" id="scanner-badge">✓ <span data-i18n="scanner_badge">QR code lido</span></div>
+        <div class="scanner-error-badge" id="scanner-error-badge"></div>
+        <div class="scanner-hint" id="scanner-hint" data-i18n="scanner_hint">Mantém a câmara estável</div>
+      </div>
+    </div>
+
+    <!-- FOTO (após QR) — suporta múltiplas páginas -->
+    <div id="screen-foto" class="screen">
+      <div class="screen-top">
+        <div class="screen-top-title" data-i18n="foto_title">QR code lido ✓</div>
+        <div class="screen-top-desc" id="foto-desc-dynamic" data-i18n="foto_desc">Agora fotografa a fatura completa</div>
+        <div class="qr-mini" id="qr-mini"></div>
+      </div>
+
+      <!-- Galeria de páginas já aceites (aparece quando há ≥1 página guardada) -->
+      <div class="paginas-galeria" id="paginas-galeria" style="display:none;">
+        <div class="paginas-galeria-label" id="paginas-galeria-label">Páginas tiradas</div>
+        <div class="paginas-galeria-scroll" id="paginas-galeria-scroll"></div>
+      </div>
+
+      <div class="foto-area" id="foto-area">
+        <!-- Estado vazio: clica para tirar foto -->
+        <div class="camera-zone" id="camera-zone-foto" onclick="document.getElementById('file-input-foto').click()">
+          <div class="camera-icon">📄</div>
+          <div class="camera-label" data-i18n="foto_camera_label">Tira foto à fatura<br><span style="font-size:11px;opacity:0.6" data-i18n="foto_camera_hint">toca para abrir a câmara</span></div>
+        </div>
+        <!-- Preview com 3 acções (aparece após foto tirada) -->
+        <div class="foto-preview-wrap" id="foto-preview-wrap" style="display:none;">
+          <img id="foto-preview-img" src="" alt="">
+          <div class="foto-preview-actions">
+            <button class="btn-preview retake" onclick="retakeFoto()">
+              <span class="btn-preview-icon">🔄</span>
+              <span data-i18n="btn_retake">Retake</span>
+            </button>
+            <button class="btn-preview add" onclick="adicionarPagina()">
+              <span class="btn-preview-icon">➕</span>
+              <span data-i18n="btn_add_page">+ Página</span>
+            </button>
+            <button class="btn-preview accept" onclick="enviarFaturaComQR()">
+              <span class="btn-preview-icon">✓</span>
+              <span data-i18n="btn_accept">Aceitar</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <input type="file" id="file-input-foto" accept="image/*" capture="environment" style="display:none">
+    </div>
+
+    <!-- SEM QR CODE -->
+    <div id="screen-sem-qr" class="screen">
+      <div class="screen-top">
+        <div class="screen-top-title" data-i18n="semqr_title">Fatura sem QR code</div>
+        <div class="screen-top-desc" data-i18n="semqr_desc">Tira foto à fatura — será guardada para classificação posterior</div>
+      </div>
+      <div class="foto-area">
+        <div class="camera-zone" id="camera-zone-semqr" onclick="document.getElementById('file-input-semqr').click()">
+          <div class="camera-icon">🗂️</div>
+          <div class="camera-label" data-i18n="semqr_camera_label">Tira foto à fatura<br><span style="font-size:11px;opacity:0.6">toca para abrir a câmara</span></div>
+          <div class="camera-retake" data-i18n="foto_retake">Trocar foto</div>
+        </div>
+        <input type="file" id="file-input-semqr" accept="image/*" capture="environment">
+      </div>
+    </div>
+
+    <!-- PDF -->
+    <div id="screen-pdf" class="screen">
+      <div class="screen-top">
+        <div class="screen-top-title" data-i18n="pdf_title">Importar PDFs</div>
+        <div class="screen-top-desc" data-i18n="pdf_desc">Serão guardados para classificação posterior</div>
+      </div>
+      <div class="pdf-area">
+        <div class="pdf-drop-zone" onclick="document.getElementById('pdf-input').click()">
+          <div class="pdf-drop-icon">📄</div>
+          <div class="pdf-drop-label" data-i18n="pdf_drop_label">Toca para seleccionar PDFs<br><span style="font-size:11px">podes seleccionar vários ao mesmo tempo</span></div>
+        </div>
+        <input type="file" id="pdf-input" accept="application/pdf" multiple style="display:none">
+        <div class="pdf-list" id="pdf-list"></div>
+      </div>
+    </div>
+
+    <!-- PROCESSING -->
+    <div id="screen-processing" class="screen">
+      <div class="spinner"></div>
+      <div class="processing-label" id="processing-label" data-i18n="processing">A processar...</div>
+    </div>
+
+    <!-- RESULTADO -->
+    <div id="screen-result" class="screen">
+      <div class="result-icon" id="result-icon"></div>
+      <div class="result-title" id="result-title"></div>
+      <div class="result-desc" id="result-desc"></div>
+      <div class="result-data" id="result-data" style="display:none;"></div>
+    </div>
+
+  </main>
+
+  <footer id="footer">
+    <div id="footer-loading"    style="display:none;"></div>
+    <div id="footer-invalid"    style="display:none;"></div>
+    <div id="footer-inicio"     style="display:none;"></div>
+    <div id="footer-scanner"    style="display:none;">
+      <button class="btn btn-secondary" onclick="voltarInicio()">← <span data-i18n="btn_cancelar">Cancelar</span></button>
+    </div>
+    <div id="footer-foto"       style="display:none;">
+      <button class="btn btn-secondary" onclick="voltarScanner()">← <span data-i18n="btn_ler_qr">Ler QR code novamente</span></button>
+    </div>
+    <div id="footer-sem-qr"     style="display:none;">
+      <button class="btn btn-primary" id="btn-enviar-semqr" disabled onclick="enviarSemQR()" data-i18n="btn_guardar_classificar">Guardar para classificar</button>
+      <button class="btn btn-secondary" onclick="voltarInicio()">← <span data-i18n="btn_voltar">Voltar</span></button>
+    </div>
+    <div id="footer-pdf"        style="display:none;">
+      <button class="btn btn-primary" id="btn-enviar-pdf" disabled onclick="enviarPDFs()" data-i18n="btn_guardar_pdf">Guardar PDFs</button>
+      <button class="btn btn-secondary" onclick="voltarInicio()">← <span data-i18n="btn_voltar">Voltar</span></button>
+    </div>
+    <div id="footer-result"     style="display:none;">
+      <button class="btn btn-primary" onclick="reiniciar()">📷 &nbsp;<span data-i18n="btn_nova_fatura">Nova fatura</span></button>
+    </div>
+  </footer>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@zxing/library@0.20.0/umd/index.min.js"></script>
+<script>
+// ── CONFIG ───────────────────────────────────────────────────
+const GAS_URL         = 'https://script.google.com/macros/s/AKfycbw7fG0bFi5K5O7hRE3ryEbibI1D0lc3PTk_RoghS5GRAbBU4CQ3dr48u23qSMXHmoqd/exec';
+const MAX_JPG_KB      = 200;
+const MAX_PDF_KB      = 500;
+const QR_ENHANCER_URL = 'https://qrenhancer2e538ffc-qrapi.functions.fnc.fr-par.scw.cloud/v1/scan';
+const QR_ENHANCER_KEY = 'sk_live_qrenhancer_miguel_2024';
+
+// ── I18N ─────────────────────────────────────────────────────
+const i18n = {
+  pt: {
+    loading:                  'A verificar...',
+    invalid_title:            'Link inválido',
+    invalid_desc:             'Este link não contém um identificador válido.<br>Contacta o teu contabilista para obteres um link correcto.',
+    inicio_title_html:        'O que pretendes<br><span>registar?</span>',
+    inicio_desc:              'Escolhe uma das opções abaixo',
+    opcao_foto_titulo:        'Fotografar fatura',
+    opcao_foto_desc:          'Lê o QR code e tira foto à fatura física',
+    opcao_semqr_titulo:       'Sem QR code',
+    opcao_semqr_desc:         'Fatura estrangeira ou sem código QR',
+    opcao_pdf_titulo:         'Importar PDF(s)',
+    opcao_pdf_desc:           'Selecciona um ou mais ficheiros PDF',
+    scanner_hint_top:         'Aponta para o QR code da fatura',
+    scanner_badge:            'QR code lido',
+    scanner_hint:             'Mantém a câmara estável',
+    scanner_no_camera:        'Não foi possível aceder à câmara. Verifica as permissões.',
+    scanner_success:          'QR code lido com sucesso!',
+    scanner_nif_invalido:     'Esta fatura não pertence à empresa deste link.',
+    foto_title:               'QR code lido ✓',
+    foto_desc:                'Agora fotografa a fatura completa',
+    foto_desc_pagina:         (n) => `Página ${n} — fotografa a próxima`,
+    foto_camera_label:        'Tira foto à fatura',
+    foto_camera_hint:         'toca para abrir a câmara',
+    foto_retake:              'Trocar foto',
+    paginas_galeria_label:    (n) => `${n} página${n > 1 ? 's' : ''} guardada${n > 1 ? 's' : ''}`,
+    btn_retake:               'Retake',
+    btn_add_page:             '+ Página',
+    btn_accept:               'Aceitar',
+    semqr_title:              'Fatura sem QR code',
+    semqr_desc:               'Tira foto à fatura — será guardada para classificação posterior',
+    semqr_camera_label:       'Tira foto à fatura',
+    pdf_title:                'Importar PDFs',
+    pdf_desc:                 'Serão guardados para classificação posterior',
+    pdf_drop_label:           'Toca para seleccionar PDFs',
+    pdf_drop_hint:            'podes seleccionar vários ao mesmo tempo',
+    pdf_pendente:             'pendente',
+    pdf_enviando:             'a enviar...',
+    pdf_guardado:             '✓ guardado',
+    pdf_erro:                 '✗ erro',
+    processing:               'A processar...',
+    processing_enviar:        'A enviar fatura...',
+    processing_guardar:       'A guardar fatura...',
+    result_registada:         'Fatura registada',
+    result_drive:             'Guardada com sucesso no Google Drive.',
+    result_duplicada:         'Fatura já registada',
+    result_duplicada_desc:    'Esta fatura já foi registada anteriormente.',
+    result_classificar:       'Guardada para classificar',
+    result_classificar_desc:  'A fatura foi guardada na pasta "por_classificar" e será processada posteriormente.',
+    result_pdfs_guardados:    'PDFs guardados',
+    result_erro:              'Erro',
+    result_pdfs_desc:         (ok, err) => `${ok} guardado(s) para classificar${err > 0 ? `, ${err} com erro` : ''}.`,
+    result_label_emissor:     'NIF Emissor',
+    result_label_data:        'Data',
+    result_label_total:       'Total',
+    result_label_ficheiro:    'Ficheiro',
+    result_label_paginas:     'Páginas',
+    btn_cancelar:             'Cancelar',
+    btn_registar:             'Registar fatura',
+    btn_ler_qr:               'Ler QR code novamente',
+    btn_guardar_classificar:  'Guardar para classificar',
+    btn_voltar:               'Voltar',
+    btn_guardar_pdf:          'Guardar PDFs',
+    btn_nova_fatura:          'Nova fatura',
+  },
+  en: {
+    loading:                  'Verifying...',
+    invalid_title:            'Invalid link',
+    invalid_desc:             'This link does not contain a valid identifier.<br>Contact your accountant to get a valid link.',
+    inicio_title_html:        'What would you like<br><span>to register?</span>',
+    inicio_desc:              'Choose one of the options below',
+    opcao_foto_titulo:        'Photograph invoice',
+    opcao_foto_desc:          'Scan the QR code and photograph the paper invoice',
+    opcao_semqr_titulo:       'No QR code',
+    opcao_semqr_desc:         'Foreign invoice or invoice without QR code',
+    opcao_pdf_titulo:         'Import PDF(s)',
+    opcao_pdf_desc:           'Select one or more PDF files',
+    scanner_hint_top:         'Point the camera at the invoice QR code',
+    scanner_badge:            'QR code read',
+    scanner_hint:             'Keep the camera steady',
+    scanner_no_camera:        'Could not access the camera. Check your permissions.',
+    scanner_success:          'QR code read successfully!',
+    scanner_nif_invalido:     'This invoice does not belong to the company on this link.',
+    foto_title:               'QR code read ✓',
+    foto_desc:                'Now photograph the complete invoice',
+    foto_desc_pagina:         (n) => `Page ${n} — photograph the next one`,
+    foto_camera_label:        'Photograph the invoice',
+    foto_camera_hint:         'tap to open the camera',
+    foto_retake:              'Retake photo',
+    paginas_galeria_label:    (n) => `${n} page${n > 1 ? 's' : ''} saved`,
+    btn_retake:               'Retake',
+    btn_add_page:             '+ Page',
+    btn_accept:               'Accept',
+    semqr_title:              'Invoice without QR code',
+    semqr_desc:               'Photograph the invoice — it will be saved for later classification',
+    semqr_camera_label:       'Photograph the invoice',
+    pdf_title:                'Import PDFs',
+    pdf_desc:                 'They will be saved for later classification',
+    pdf_drop_label:           'Tap to select PDFs',
+    pdf_drop_hint:            'you can select multiple files at once',
+    pdf_pendente:             'pending',
+    pdf_enviando:             'sending...',
+    pdf_guardado:             '✓ saved',
+    pdf_erro:                 '✗ error',
+    processing:               'Processing...',
+    processing_enviar:        'Sending invoice...',
+    processing_guardar:       'Saving invoice...',
+    result_registada:         'Invoice registered',
+    result_drive:             'Successfully saved to Google Drive.',
+    result_duplicada:         'Invoice already registered',
+    result_duplicada_desc:    'This invoice has already been registered.',
+    result_classificar:       'Saved for classification',
+    result_classificar_desc:  'The invoice was saved in the "unclassified" folder and will be processed later.',
+    result_pdfs_guardados:    'PDFs saved',
+    result_erro:              'Error',
+    result_pdfs_desc:         (ok, err) => `${ok} saved for classification${err > 0 ? `, ${err} with error` : ''}.`,
+    result_label_emissor:     'Issuer NIF',
+    result_label_data:        'Date',
+    result_label_total:       'Total',
+    result_label_ficheiro:    'File',
+    result_label_paginas:     'Pages',
+    btn_cancelar:             'Cancel',
+    btn_registar:             'Register invoice',
+    btn_ler_qr:               'Scan QR code again',
+    btn_guardar_classificar:  'Save for classification',
+    btn_voltar:               'Back',
+    btn_guardar_pdf:          'Save PDFs',
+    btn_nova_fatura:          'New invoice',
+  }
+};
+
+const LANG_META = {
+  pt: { flag: '🇵🇹', name: 'Português' },
+  en: { flag: '🇬🇧', name: 'English'   },
+};
+
+// ── ESTADO ───────────────────────────────────────────────────
+let contabilista_id  = null;
+let nif_empresa      = null;
+let token_cliente    = null;
+let lang             = 'pt';
+let dados_qr         = null;
+let imagem_base64    = null;   // foto atual em edição (base64 comprimida)
+let paginas_b64      = [];     // array de base64 das páginas aceites
+let imagem_semqr     = null;
+let pdf_files        = [];
+let scannerActivo    = false;
+
+// ── INIT ─────────────────────────────────────────────────────
+(async function init() {
+  const params = new URLSearchParams(window.location.search);
+  contabilista_id = params.get('c') || params.get('contabilista');
+  token_cliente   = params.get('k') || params.get('token');
+  nif_empresa     = params.get('n') || null;
+
+  if (!contabilista_id || !token_cliente) {
+    mostrarScreen('invalid');
+    document.getElementById('footer').style.display = 'none';
+    return;
+  }
+
+  carregarLogo(contabilista_id);
+
+  document.getElementById('file-input-foto').addEventListener('change',  onFotoQRSelecionada);
+  document.getElementById('file-input-semqr').addEventListener('change', onFotoSemQRSelecionada);
+  document.getElementById('pdf-input').addEventListener('change',        onPDFsSelecionados);
+
+  document.addEventListener('click', (e) => {
+    if (!document.getElementById('lang-selector').contains(e.target)) {
+      document.getElementById('lang-dropdown').classList.remove('open');
+    }
+  });
+
+  mostrarScreen('inicio');
+})();
+
+// ── LOGO ─────────────────────────────────────────────────────
+async function carregarLogo(c_id) {
+  try {
+    const qs   = `action=logo&c=${encodeURIComponent(c_id)}`;
+    const resp = await fetch(GAS_URL + '?' + qs);
+    const json = await resp.json();
+    if (json.ok && json.base64) {
+      const img = document.getElementById('logo-contabilista');
+      img.src   = `data:${json.mime_type};base64,${json.base64}`;
+      img.style.display = 'block';
+      img.onload = () => img.classList.add('loaded');
+    }
+  } catch (e) {}
+}
+
+// ── I18N ─────────────────────────────────────────────────────
+function t(key) {
+  return (i18n[lang] && i18n[lang][key]) || (i18n['pt'][key]) || key;
+}
+
+function setLang(novo_lang) {
+  if (!i18n[novo_lang]) return;
+  lang = novo_lang;
+  document.getElementById('lang-flag-current').textContent = LANG_META[lang].flag;
+  Object.keys(LANG_META).forEach(l => {
+    document.getElementById('lang-opt-' + l).classList.toggle('active', l === lang);
+  });
+  document.getElementById('lang-dropdown').classList.remove('open');
+  aplicarI18n();
+}
+
+function aplicarI18n() {
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    const val = t(key);
+    if (val && typeof val === 'string') el.innerHTML = val;
+  });
+  // Actualizar label dinâmica da galeria
+  actualizarGaleria();
+}
+
+function toggleLangDropdown() {
+  document.getElementById('lang-dropdown').classList.toggle('open');
+}
+
+// ── NAVEGAÇÃO ─────────────────────────────────────────────────
+function mostrarScreen(nome) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const s = document.getElementById('screen-' + nome);
+  if (s) s.classList.add('active');
+
+  ['loading','invalid','inicio','scanner','foto','sem-qr','pdf','processing','result'].forEach(n => {
+    const f = document.getElementById('footer-' + n);
+    if (f) f.style.display = n === nome ? 'block' : 'none';
+  });
+
+  const steps = { inicio: 0, scanner: 0, 'sem-qr': 0, pdf: 0, foto: 1, processing: 1, result: 2 };
+  const step  = steps[nome] ?? 0;
+  ['dot-1','dot-2','dot-3'].forEach((id, i) => {
+    document.getElementById(id).className = 'step-dot' + (i < step ? ' done' : i === step ? ' active' : '');
+  });
+
+  aplicarI18n();
+}
+
+function voltarInicio() {
+  pararStream();
+  scannerActivo = false;
+  resetarFluxoFoto();
+  imagem_semqr = null; pdf_files = [];
+  resetarZonaFoto('semqr');
+  document.getElementById('pdf-list').innerHTML = '';
+  const btnPdf = document.getElementById('btn-enviar-pdf');
+  if (btnPdf) btnPdf.disabled = true;
+  mostrarScreen('inicio');
+}
+
+function voltarScanner() {
+  resetarFluxoFoto();
+  document.getElementById('scanner-frame').classList.remove('success');
+  document.getElementById('scanner-badge').classList.remove('visible');
+  document.getElementById('scanner-hint').textContent = t('scanner_hint');
+  document.getElementById('scanner-hint').style.color = '';
+  scannerActivo = true;
+  iniciarScanner();
+}
+
+// ── RESET DO FLUXO DE FOTO MULTI-PÁGINA ──────────────────────
+function resetarFluxoFoto() {
+  dados_qr      = null;
+  imagem_base64 = null;
+  paginas_b64   = [];
+
+  // Reset zona câmara
+  document.getElementById('camera-zone-foto').style.display = 'flex';
+  document.getElementById('foto-preview-wrap').style.display = 'none';
+  document.getElementById('foto-preview-img').src = '';
+
+  // Reset galeria
+  document.getElementById('paginas-galeria').style.display = 'none';
+  document.getElementById('paginas-galeria-scroll').innerHTML = '';
+
+  // Reset descrição
+  const descEl = document.getElementById('foto-desc-dynamic');
+  if (descEl) { descEl.setAttribute('data-i18n','foto_desc'); descEl.textContent = t('foto_desc'); }
+
+  // Reset input
+  const input = document.getElementById('file-input-foto');
+  if (input) input.value = '';
+}
+
+// ── SCANNER ──────────────────────────────────────────────────
+async function iniciarScanner() {
+  mostrarScreen('scanner');
+  scannerActivo = true;
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+    });
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    await video.play();
+    scanFrame();
+  } catch(err) {
+    document.getElementById('scanner-hint').textContent = t('scanner_no_camera');
+    document.getElementById('scanner-hint').style.color = 'rgba(240,96,96,0.9)';
+  }
+}
+
+function pararStream() {
+  const video = document.getElementById('video');
+  if (video.srcObject) {
+    video.srcObject.getTracks().forEach(tr => tr.stop());
+    video.srcObject = null;
+  }
+}
+
+function scanFrame() {
+  if (!scannerActivo) return;
+  const video = document.getElementById('video');
+  if (video.readyState !== video.HAVE_ENOUGH_DATA) { requestAnimationFrame(scanFrame); return; }
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0);
+
+  if (tentarLerQR(canvas)) return;
+
+  const canvas2 = aplicarBinarizacao(canvas);
+  if (tentarLerQR(canvas2)) return;
+
+  if (qrVisivelNaImagem(canvas)) {
+    tentarLerQRAPI(canvas);
+    return;
+  }
+
+  requestAnimationFrame(scanFrame);
+}
+
+function tentarLerQR(canvas) {
+  try {
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.QR_CODE]);
+    const luminance = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+    const bitmap    = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminance));
+    const reader    = new ZXing.MultiFormatReader();
+    reader.setHints(hints);
+    const result    = reader.decode(bitmap);
+    if (result && result.getText()) {
+      const qr = parsearQR(result.getText());
+      if (qr) { onQRDetectado(qr); return true; }
+    }
+  } catch(e) {}
+  return false;
+}
+
+function qrVisivelNaImagem(canvas) {
+  try {
+    const hints = new Map();
+    hints.set(ZXing.DecodeHintType.TRY_HARDER, true);
+    hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS, [ZXing.BarcodeFormat.QR_CODE]);
+    const luminance = new ZXing.HTMLCanvasElementLuminanceSource(canvas);
+    const bitmap    = new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(luminance));
+    const detector  = new ZXing.QRCodeReader();
+    detector.setHints(hints);
+    detector.decode(bitmap);
+    return true;
+  } catch(e) {
+    const nome = e?.constructor?.name || '';
+    const msg  = e?.message || '';
+    if (nome === 'FormatException' || nome === 'ChecksumException') return true;
+    if (msg.includes('format') || msg.includes('checksum')) return true;
+    return false;
+  }
+}
+
+let apiEmCurso = false;
+let apiUltimaEnvio = 0;
+const API_INTERVALO_MS = 2000;
+
+async function tentarLerQRAPI(canvas) {
+  if (apiEmCurso) return;
+  const agora = Date.now();
+  if (agora - apiUltimaEnvio < API_INTERVALO_MS) { requestAnimationFrame(scanFrame); return; }
+  apiEmCurso = true;
+  apiUltimaEnvio = agora;
+  try {
+    const maxDim = 1000;
+    let w = canvas.width, h = canvas.height;
+    if (w > maxDim || h > maxDim) {
+      if (w > h) { h = Math.round(h * maxDim / w); w = maxDim; }
+      else        { w = Math.round(w * maxDim / h); h = maxDim; }
+    }
+    const resized = document.createElement('canvas');
+    resized.width = w; resized.height = h;
+    resized.getContext('2d').drawImage(canvas, 0, 0, w, h);
+    const b64 = resized.toDataURL('image/jpeg', 0.85).split(',')[1];
+    const resp = await fetch(QR_ENHANCER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': QR_ENHANCER_KEY },
+      body: JSON.stringify({ image: b64, mode: 'auto', max_time_ms: 5000, hints: { damage: 'heavy' } }),
+    });
+    const json = await resp.json();
+    if (json.success && json.result?.content) {
+      const qr = parsearQR(json.result.content);
+      if (qr && scannerActivo) { onQRDetectado(qr); return; }
+    }
+  } catch(e) {
+    console.warn('QR Enhancer API falhou:', e);
+  } finally {
+    apiEmCurso = false;
+  }
+  if (scannerActivo) requestAnimationFrame(scanFrame);
+}
+
+function aplicarBinarizacao(srcCanvas) {
+  const c   = document.createElement('canvas');
+  c.width   = srcCanvas.width;
+  c.height  = srcCanvas.height;
+  const ctx = c.getContext('2d');
+  ctx.drawImage(srcCanvas, 0, 0);
+  const imgData = ctx.getImageData(0, 0, c.width, c.height);
+  const d = imgData.data;
+  for (let i = 0; i < d.length; i += 4) {
+    const lum      = 0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2];
+    const contraste = Math.min(255, Math.max(0, (lum - 128) * 1.8 + 128));
+    const val = contraste > 140 ? 255 : 0;
+    d[i] = d[i+1] = d[i+2] = val;
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return c;
+}
+
+async function onQRDetectado(qr) {
+  scannerActivo = false;
+
+  // Validar NIF da empresa
+  if (nif_empresa && qr.nif_cliente && qr.nif_cliente !== '999999990') {
+    if (qr.nif_cliente !== nif_empresa) {
+      document.getElementById('scanner-frame').classList.remove('success');
+      const errorBadge = document.getElementById('scanner-error-badge');
+      errorBadge.textContent = t('scanner_nif_invalido');
+      errorBadge.classList.add('visible');
+      if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+      setTimeout(() => {
+        errorBadge.classList.remove('visible');
+        scannerActivo = true;
+        scanFrame();
+      }, 3000);
+      return;
+    }
+  }
+
+  document.getElementById('scanner-frame').classList.add('success');
+  document.getElementById('scanner-badge').classList.add('visible');
+  document.getElementById('scanner-hint').textContent = t('scanner_success');
+  if (navigator.vibrate) navigator.vibrate(100);
+
+  setTimeout(async () => {
+    pararStream();
+    try {
+      const qs   = new URLSearchParams({ contabilista_id, nif_cliente: qr.nif_cliente, nif_emissor: qr.nif_emissor, data_fatura: qr.data_fatura, numero_fatura: qr.numero_fatura });
+      const resp = await fetch(GAS_URL + '?' + qs.toString());
+      const json = await resp.json();
+      if (json.duplicado) { mostrarResultadoDuplicado(); return; }
+    } catch(e) {
+      console.warn('Verificação duplicado falhou, prosseguindo:', e);
+    }
+    dados_qr = qr;
+    mostrarScreenFoto(qr);
+  }, 700);
+}
+
+// ── FOTO COM QR — MULTI-PÁGINA ────────────────────────────────
+function mostrarScreenFoto(qr) {
+  mostrarScreen('foto');
+  document.getElementById('qr-mini').innerHTML = `
+    <div class="qr-pill">${t('result_label_emissor')} <strong>${qr.nif_emissor}</strong></div>
+    <div class="qr-pill">${t('result_label_data')} <strong>${formatarData(qr.data_fatura)}</strong></div>
+    <div class="qr-pill">${t('result_label_total')} <strong>${qr.total_com_iva} €</strong></div>
+    <div class="qr-pill">Nº <strong>${qr.numero_fatura}</strong></div>
+  `;
+}
+
+async function onFotoQRSelecionada(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Limpar input para permitir re-selecionar o mesmo ficheiro (retake)
+  e.target.value = '';
+
+  imagem_base64 = null;
+
+  // Mostrar preview imediatamente com URL temporário
+  const tempUrl = URL.createObjectURL(file);
+  const previewImg = document.getElementById('foto-preview-img');
+  previewImg.src = tempUrl;
+  document.getElementById('camera-zone-foto').style.display = 'none';
+  document.getElementById('foto-preview-wrap').style.display = 'block';
+
+  // Comprimir em background
+  imagem_base64 = await comprimirImagem(file, MAX_JPG_KB);
+  URL.revokeObjectURL(tempUrl);
+}
+
+// Retake: descarta a foto atual, volta ao estado vazio
+function retakeFoto() {
+  imagem_base64 = null;
+  document.getElementById('foto-preview-img').src = '';
+  document.getElementById('foto-preview-wrap').style.display = 'none';
+  document.getElementById('camera-zone-foto').style.display = 'flex';
+  document.getElementById('file-input-foto').click();
+}
+
+// Adicionar página: guarda a foto atual, abre câmara para a próxima
+function adicionarPagina() {
+  if (!imagem_base64) return;
+
+  // Guardar página atual
+  paginas_b64.push(imagem_base64);
+  const numPagina = paginas_b64.length;
+
+  // Adicionar miniatura à galeria
+  const scroll = document.getElementById('paginas-galeria-scroll');
+  const thumb  = document.createElement('div');
+  thumb.className = 'pagina-thumb';
+  thumb.innerHTML = `<img src="data:image/jpeg;base64,${imagem_base64}"><span class="pagina-thumb-num">${numPagina}</span>`;
+  scroll.appendChild(thumb);
+
+  // Mostrar galeria
+  actualizarGaleria();
+
+  // Actualizar descrição
+  const descEl = document.getElementById('foto-desc-dynamic');
+  if (descEl) {
+    descEl.removeAttribute('data-i18n');
+    const fn = t('foto_desc_pagina');
+    descEl.textContent = typeof fn === 'function' ? fn(numPagina + 1) : fn;
+  }
+
+  // Limpar preview e abrir câmara para próxima foto
+  imagem_base64 = null;
+  document.getElementById('foto-preview-img').src = '';
+  document.getElementById('foto-preview-wrap').style.display = 'none';
+  document.getElementById('camera-zone-foto').style.display = 'flex';
+  document.getElementById('file-input-foto').click();
+}
+
+function actualizarGaleria() {
+  const n = paginas_b64.length;
+  const galeria = document.getElementById('paginas-galeria');
+  galeria.style.display = n > 0 ? 'block' : 'none';
+  const label = document.getElementById('paginas-galeria-label');
+  if (label) {
+    const fn = t('paginas_galeria_label');
+    label.textContent = typeof fn === 'function' ? fn(n) : fn;
+  }
+}
+
+// Aceitar: combina todas as páginas numa tira vertical e envia
+async function enviarFaturaComQR() {
+  if (!dados_qr || !imagem_base64) return;
+
+  // Juntar página actual às anteriores
+  const todasPaginas = [...paginas_b64, imagem_base64];
+
+  mostrarScreen('processing');
+  document.getElementById('processing-label').textContent = t('processing_enviar');
+
+  let imagemFinal;
+
+  if (todasPaginas.length === 1) {
+    // Só uma página — enviar directamente
+    imagemFinal = todasPaginas[0];
+  } else {
+    // Múltiplas páginas — combinar em tira vertical via Canvas
+    imagemFinal = await combinarPaginasVertical(todasPaginas);
+  }
+
+  const formData = new FormData();
+  formData.append('contabilista_id', contabilista_id);
+  formData.append('token',           token_cliente);
+  formData.append('nif_emissor',     dados_qr.nif_emissor);
+  formData.append('nif_cliente',     dados_qr.nif_cliente);
+  formData.append('data_fatura',     dados_qr.data_fatura);
+  formData.append('numero_fatura',   dados_qr.numero_fatura);
+  formData.append('atcud',           dados_qr.atcud);
+  formData.append('tipo_doc',        dados_qr.tipo_doc);
+  formData.append('espaco_fiscal',   dados_qr.espaco_fiscal);
+  formData.append('total_sem_iva',   dados_qr.total_sem_iva);
+  formData.append('total_iva',       dados_qr.total_iva);
+  formData.append('total_com_iva',   dados_qr.total_com_iva);
+  formData.append('imagem_base64',   imagemFinal);
+  formData.append('extensao',        'jpg');
+  formData.append('num_paginas',     todasPaginas.length);
+
+  fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: formData });
+
+  mostrarResultadoSucesso({
+    nif_emissor:   dados_qr.nif_emissor,
+    data_fatura:   dados_qr.data_fatura,
+    total_com_iva: dados_qr.total_com_iva,
+    num_paginas:   todasPaginas.length,
+    nome_ficheiro: `${dados_qr.nif_emissor}_${dados_qr.data_fatura}_${dados_qr.numero_fatura.replace(/[\/\\:*?"<>|]/g,'-')}.jpg`
+  });
+}
+
+// Combina um array de base64 (JPEG) numa única imagem vertical
+function combinarPaginasVertical(paginasB64) {
+  return new Promise((resolve) => {
+    const imgs = paginasB64.map(() => new Image());
+    let loaded = 0;
+
+    paginasB64.forEach((b64, i) => {
+      imgs[i].onload = () => {
+        loaded++;
+        if (loaded < imgs.length) return;
+
+        // Largura = máx de todas as páginas; altura = soma
+        const largura = Math.max(...imgs.map(img => img.width));
+        const altura  = imgs.reduce((acc, img) => acc + img.height, 0);
+
+        const canvas = document.createElement('canvas');
+        canvas.width  = largura;
+        canvas.height = altura;
+        const ctx = canvas.getContext('2d');
+
+        // Fundo branco
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, largura, altura);
+
+        // Desenhar cada página centrada horizontalmente
+        let y = 0;
+        imgs.forEach(img => {
+          const x = Math.round((largura - img.width) / 2);
+          ctx.drawImage(img, x, y);
+          y += img.height;
+        });
+
+        // Comprimir resultado final para MAX_JPG_KB * num_paginas (com ceiling)
+        const maxKB = Math.min(MAX_JPG_KB * paginasB64.length, 600);
+        let quality = 0.85;
+        const comprimir = () => {
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          const kb = Math.round((dataUrl.length * 3) / 4 / 1024);
+          if (kb <= maxKB || quality <= 0.2) {
+            resolve(dataUrl.split(',')[1]);
+          } else {
+            quality -= 0.1;
+            comprimir();
+          }
+        };
+        comprimir();
+      };
+      imgs[i].src = 'data:image/jpeg;base64,' + b64;
+    });
+  });
+}
+
+// ── SEM QR ───────────────────────────────────────────────────
+async function onFotoSemQRSelecionada(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  imagem_semqr = null;
+  document.getElementById('btn-enviar-semqr').disabled = true;
+  await mostrarPreviewEComprimir(file, 'semqr', MAX_JPG_KB, (b64) => {
+    imagem_semqr = b64;
+    document.getElementById('btn-enviar-semqr').disabled = false;
+  });
+}
+
+async function enviarSemQR() {
+  if (!imagem_semqr) return;
+  mostrarScreen('processing');
+  document.getElementById('processing-label').textContent = t('processing_guardar');
+  const formData = new FormData();
+  formData.append('contabilista_id', contabilista_id);
+  formData.append('token',           token_cliente);
+  formData.append('nif_cliente',     '0');
+  formData.append('sem_qr',          'true');
+  formData.append('extensao',        'jpg');
+  formData.append('imagem_base64',   imagem_semqr);
+  fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: formData });
+  mostrarScreen('result');
+  document.getElementById('result-icon').textContent  = '🗂️';
+  document.getElementById('result-title').textContent = t('result_classificar');
+  document.getElementById('result-title').className   = 'result-title warning';
+  document.getElementById('result-desc').textContent  = t('result_classificar_desc');
+  document.getElementById('result-data').style.display = 'none';
+}
+
+// ── PDFs ─────────────────────────────────────────────────────
+async function onPDFsSelecionados(e) {
+  pdf_files = Array.from(e.target.files);
+  if (!pdf_files.length) return;
+  const list = document.getElementById('pdf-list');
+  list.innerHTML = '';
+  pdf_files.forEach((f, i) => {
+    list.innerHTML += `
+      <div class="pdf-item" id="pdf-item-${i}">
+        <div class="pdf-item-icon">📄</div>
+        <div class="pdf-item-name">${f.name}</div>
+        <div class="pdf-item-status pending" id="pdf-status-${i}">${t('pdf_pendente')}</div>
+      </div>`;
+  });
+  document.getElementById('btn-enviar-pdf').disabled = false;
+}
+
+async function enviarPDFs() {
+  if (!pdf_files.length) return;
+  document.getElementById('btn-enviar-pdf').disabled = true;
+  let ok = 0, erro = 0;
+  for (let i = 0; i < pdf_files.length; i++) {
+    const file     = pdf_files[i];
+    const statusEl = document.getElementById('pdf-status-' + i);
+    statusEl.className   = 'pdf-item-status loading';
+    statusEl.textContent = t('pdf_enviando');
+    try {
+      const b64 = await lerFicheiroBase64(file);
+      const formData = new FormData();
+      formData.append('contabilista_id', contabilista_id);
+      formData.append('token',           token_cliente);
+      formData.append('nif_cliente',     '0');
+      formData.append('sem_qr',          'true');
+      formData.append('extensao',        'pdf');
+      formData.append('mime_type',       'application/pdf');
+      formData.append('nome_original',   file.name);
+      formData.append('imagem_base64',   b64);
+      fetch(GAS_URL, { method: 'POST', mode: 'no-cors', body: formData });
+      statusEl.className   = 'pdf-item-status ok';
+      statusEl.textContent = t('pdf_guardado');
+      ok++;
+    } catch(e) {
+      statusEl.className   = 'pdf-item-status err';
+      statusEl.textContent = t('pdf_erro');
+      erro++;
+    }
+  }
+  mostrarScreen('result');
+  document.getElementById('result-icon').textContent  = ok > 0 ? '🗂️' : '❌';
+  document.getElementById('result-title').textContent = ok > 0 ? t('result_pdfs_guardados') : t('result_erro');
+  document.getElementById('result-title').className   = 'result-title ' + (ok > 0 ? 'warning' : 'error');
+  document.getElementById('result-desc').textContent  = t('result_pdfs_desc')(ok, erro);
+  document.getElementById('result-data').style.display = 'none';
+}
+
+// ── PREVIEW + COMPRESSÃO (sem QR) ────────────────────────────
+async function mostrarPreviewEComprimir(file, sufixo, maxKB, callback) {
+  const zone = document.getElementById('camera-zone-' + sufixo);
+  const url  = URL.createObjectURL(file);
+  let img = zone.querySelector('img');
+  if (!img) { img = document.createElement('img'); zone.appendChild(img); }
+  img.src = url;
+  zone.classList.add('has-preview');
+  zone.querySelector('.camera-icon').style.display  = 'none';
+  zone.querySelector('.camera-label').style.display = 'none';
+  const b64 = await comprimirImagem(file, maxKB);
+  callback(b64);
+}
+
+function comprimirImagem(file, maxKB) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      const MAX_DIM = 1600;
+      if (w > MAX_DIM || h > MAX_DIM) {
+        if (w > h) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+        else        { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      let quality = 0.85;
+      const tentativa = () => {
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        const kb = Math.round((dataUrl.length * 3) / 4 / 1024);
+        if (kb <= maxKB || quality <= 0.2) { resolve(dataUrl.split(',')[1]); }
+        else { quality -= 0.1; tentativa(); }
+      };
+      tentativa();
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
+}
+
+function lerFicheiroBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(e.target.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function resetarZonaFoto(sufixo) {
+  const zone = document.getElementById('camera-zone-' + sufixo);
+  if (!zone) return;
+  const img  = zone.querySelector('img');
+  if (img) img.remove();
+  zone.classList.remove('has-preview');
+  const icon  = zone.querySelector('.camera-icon');
+  const label = zone.querySelector('.camera-label');
+  if (icon)  icon.style.display  = '';
+  if (label) label.style.display = '';
+  const input = document.getElementById('file-input-' + sufixo);
+  if (input) input.value = '';
+  const btn = document.getElementById('btn-enviar-' + (sufixo === 'foto' ? 'foto' : 'semqr'));
+  if (btn) btn.disabled = true;
+}
+
+// ── PARSER QR ────────────────────────────────────────────────
+function parsearQR(raw) {
+  try {
+    const campos = {};
+    raw.split('*').forEach(par => {
+      const idx = par.indexOf(':');
+      if (idx > 0) campos[par.substring(0,idx).trim()] = par.substring(idx+1).trim();
+    });
+    if (!campos['A'] || !campos['F']) return null;
+    const pref = campos['I1'] ? 'I' : (campos['J1'] ? 'J' : 'K');
+    const espaco_fiscal = campos['I1'] || campos['J1'] || campos['K1'] || 'PT';
+    const b_is = parseFloat(campos[pref+'2']||0), b_red = parseFloat(campos[pref+'3']||0);
+    const b_int = parseFloat(campos[pref+'5']||0), b_nor = parseFloat(campos[pref+'7']||0);
+    return {
+      nif_emissor:   campos['A'],
+      nif_cliente:   campos['B'] || '999999990',
+      tipo_doc:      campos['D'] || '',
+      data_fatura:   campos['F'],
+      numero_fatura: campos['G'] || '',
+      atcud:         campos['H'] || '',
+      espaco_fiscal,
+      total_sem_iva: (b_is + b_red + b_int + b_nor).toFixed(2),
+      total_iva:     campos['N'] || '0.00',
+      total_com_iva: campos['O'] || '0.00'
+    };
+  } catch(e) { return null; }
+}
+
+// ── RESULTADOS ───────────────────────────────────────────────
+function mostrarResultadoSucesso(dados) {
+  mostrarScreen('result');
+  document.getElementById('result-icon').textContent  = '✅';
+  document.getElementById('result-title').textContent = t('result_registada');
+  document.getElementById('result-title').className   = 'result-title success';
+  document.getElementById('result-desc').textContent  = t('result_drive');
+  const div = document.getElementById('result-data');
+  div.style.display = 'flex';
+  const paginasRow = dados.num_paginas > 1
+    ? `<div class="divider"></div>
+       <div class="result-row"><span class="result-row-label">${t('result_label_paginas')}</span><span class="result-row-value" style="color:var(--accent)">${dados.num_paginas}</span></div>`
+    : '';
+  div.innerHTML = `
+    <div class="result-row"><span class="result-row-label">${t('result_label_emissor')}</span><span class="result-row-value">${dados?.nif_emissor||'—'}</span></div>
+    <div class="divider"></div>
+    <div class="result-row"><span class="result-row-label">${t('result_label_data')}</span><span class="result-row-value">${dados?.data_fatura ? formatarData(dados.data_fatura) : '—'}</span></div>
+    <div class="divider"></div>
+    <div class="result-row"><span class="result-row-label">${t('result_label_total')}</span><span class="result-row-value" style="color:var(--accent)">${dados?.total_com_iva ? dados.total_com_iva+' €' : '—'}</span></div>
+    ${paginasRow}
+    <div class="divider"></div>
+    <div class="result-row"><span class="result-row-label">${t('result_label_ficheiro')}</span><span class="result-row-value" style="font-size:11px;color:var(--text-muted)">${dados?.nome_ficheiro||'—'}</span></div>
+  `;
+}
+
+function mostrarResultadoDuplicado() {
+  mostrarScreen('result');
+  document.getElementById('result-icon').textContent  = '⚠️';
+  document.getElementById('result-title').textContent = t('result_duplicada');
+  document.getElementById('result-title').className   = 'result-title warning';
+  document.getElementById('result-desc').textContent  = t('result_duplicada_desc');
+  document.getElementById('result-data').style.display = 'none';
+}
+
+// ── REINICIAR ────────────────────────────────────────────────
+function reiniciar() {
+  resetarFluxoFoto();
+  imagem_semqr = null; pdf_files = [];
+  resetarZonaFoto('semqr');
+  document.getElementById('pdf-list').innerHTML = '';
+  document.getElementById('result-data').style.display = 'none';
+  document.getElementById('scanner-frame').classList.remove('success');
+  document.getElementById('scanner-badge').classList.remove('visible');
+  const errorBadge = document.getElementById('scanner-error-badge');
+  if (errorBadge) errorBadge.classList.remove('visible');
+  document.getElementById('scanner-hint').textContent = t('scanner_hint');
+  document.getElementById('scanner-hint').style.color = '';
+  scannerActivo = false;
+  mostrarScreen('inicio');
+}
+
+// ── UTILS ────────────────────────────────────────────────────
+function formatarData(s) {
+  if (!s || s.length !== 8) return s || '—';
+  return `${s.slice(6,8)}/${s.slice(4,6)}/${s.slice(0,4)}`;
+}
+</script>
+</body>
+</html>

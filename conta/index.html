@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FaturaScan — Área do Contabilista</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0f0f0d;
+      --surface: #1a1a16;
+      --surface2: #242420;
+      --border: #2e2e28;
+      --border2: #3e3e38;
+      --accent: #c8f060;
+      --accent-dim: rgba(200,240,96,0.12);
+      --accent-border: rgba(200,240,96,0.25);
+      --text: #e8e8e0;
+      --text-muted: #6e6e60;
+      --text-dim: #3e3e34;
+      --success: #60f0a0;
+      --error: #f06060;
+      --warning: #f0a060;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { height: 100%; }
+    body {
+      font-family: 'DM Mono', monospace;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      opacity: 0.03; pointer-events: none; z-index: 9999;
+    }
+
+    /* ── NAV ── */
+    nav {
+      height: 60px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15,15,13,0.95);
+      backdrop-filter: blur(12px);
+    }
+    .nav-logo { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--accent); letter-spacing: -0.5px; text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .nav-logo span { color: var(--text-muted); font-weight: 300; font-style: italic; }
+    .nav-right { display: flex; align-items: center; gap: 16px; }
+    .nav-user { display: flex; align-items: center; gap: 10px; }
+    .nav-user-foto { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border2); object-fit: cover; }
+    .nav-user-nome { font-size: 12px; color: var(--text-muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btn-logout { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 12px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); cursor: pointer; transition: border-color 0.2s, color 0.2s; }
+    .btn-logout:hover { border-color: var(--error); color: var(--error); }
+
+    /* ── LAYOUT ── */
+    .container { max-width: 900px; margin: 0 auto; padding: 48px 32px; }
+
+    /* ── ECRÃS ── */
+    .screen { display: none; animation: fadeIn 0.3s ease; }
+    .screen.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* ── LOGIN ── */
+    #screen-login {
+      min-height: calc(100vh - 60px);
+      display: none; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 48px 32px; text-align: center;
+      position: relative;
+    }
+    #screen-login.active { display: flex; }
+    .login-bg {
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(200,240,96,0.06) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .login-logo { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 600; color: var(--accent); margin-bottom: 8px; letter-spacing: -1px; }
+    .login-logo span { color: var(--text-muted); font-weight: 300; font-style: italic; }
+    .login-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 48px; }
+    .login-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px 48px;
+      max-width: 400px; width: 100%;
+      position: relative;
+    }
+    .login-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+    .login-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 32px; line-height: 1.6; }
+    .btn-google {
+      width: 100%; padding: 14px 20px;
+      background: white; color: #1a1a1a;
+      border: none; border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: opacity 0.15s, transform 0.15s;
+      letter-spacing: 0.3px;
+    }
+    .btn-google:hover { opacity: 0.92; transform: translateY(-1px); }
+    .btn-google:active { transform: scale(0.98); }
+    .btn-google svg { flex-shrink: 0; }
+    .login-note { margin-top: 20px; font-size: 11px; color: var(--text-dim); line-height: 1.6; }
+
+    /* ── ONBOARDING ── */
+    .onboarding-header { margin-bottom: 40px; }
+    .onboarding-badge {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent-dim); border: 1px solid var(--accent-border);
+      color: var(--accent); padding: 5px 14px; border-radius: 20px;
+      font-size: 11px; letter-spacing: 1px; margin-bottom: 20px;
+    }
+    .page-title { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 8px; }
+    .page-sub { font-size: 13px; color: var(--text-muted); line-height: 1.6; max-width: 520px; }
+
+    .steps-onboarding { display: flex; flex-direction: column; gap: 16px; margin: 40px 0; }
+    .step-onboarding {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      display: flex; gap: 20px; align-items: flex-start;
+    }
+    .step-onboarding.done { border-color: rgba(96,240,160,0.3); }
+    .step-num-circle {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--surface2); border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 500; color: var(--text-muted);
+      flex-shrink: 0; margin-top: 2px;
+    }
+    .step-onboarding.done .step-num-circle { background: rgba(96,240,160,0.15); border-color: rgba(96,240,160,0.4); color: var(--success); }
+    .step-content { flex: 1; }
+    .step-onboarding-title { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+    .step-onboarding-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 12px; }
+    .step-onboarding-desc strong { color: var(--accent); font-weight: 500; }
+
+    .input-group { display: flex; gap: 8px; }
+    .input-drive {
+      flex: 1; padding: 11px 14px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text);
+      outline: none; transition: border-color 0.2s;
+    }
+    .input-drive:focus { border-color: var(--accent); }
+    .input-drive::placeholder { color: var(--text-dim); }
+    .btn-confirmar {
+      padding: 11px 20px;
+      background: var(--accent); color: var(--bg);
+      border: none; border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
+      cursor: pointer; white-space: nowrap;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .btn-confirmar:hover { opacity: 0.88; transform: translateY(-1px); }
+    .btn-confirmar:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+    .step-feedback { font-size: 11px; margin-top: 8px; }
+    .step-feedback.ok { color: var(--success); }
+    .step-feedback.erro { color: var(--error); }
+
+    /* ── DASHBOARD ── */
+    .dashboard-header {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      margin-bottom: 32px; gap: 16px; flex-wrap: wrap;
+    }
+    .dashboard-title { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 4px; }
+    .dashboard-sub { font-size: 12px; color: var(--text-muted); }
+
+    /* Stats */
+    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 32px; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 24px;
+    }
+    .stat-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 8px; }
+    .stat-value { font-family: 'Fraunces', serif; font-size: 36px; font-weight: 600; color: var(--accent); letter-spacing: -1px; line-height: 1; }
+    .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+    /* Clientes */
+    .clientes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .clientes-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; }
+    .btn-add {
+      display: flex; align-items: center; gap: 6px;
+      background: var(--accent); color: var(--bg);
+      border: none; border-radius: var(--radius-sm);
+      padding: 9px 16px; font-family: 'DM Mono', monospace;
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: opacity 0.15s, transform 0.15s;
+    }
+    .btn-add:hover { opacity: 0.88; transform: translateY(-1px); }
+
+    .clientes-list { display: flex; flex-direction: column; gap: 8px; }
+    .cliente-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 24px;
+      display: flex; align-items: center; gap: 16px;
+      transition: border-color 0.2s;
+    }
+    .cliente-card:hover { border-color: var(--border2); }
+    .cliente-avatar {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: var(--surface2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .cliente-info { flex: 1; min-width: 0; }
+    .cliente-nome { font-size: 14px; font-weight: 500; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cliente-nif { font-size: 11px; color: var(--text-muted); }
+    .cliente-stats { display: flex; gap: 16px; flex-shrink: 0; }
+    .cliente-stat { text-align: center; }
+    .cliente-stat-val { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: var(--text); line-height: 1; }
+    .cliente-stat-label { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
+    .cliente-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .btn-copy {
+      padding: 7px 14px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-copy.copiado { border-color: var(--success); color: var(--success); }
+    .btn-remove {
+      padding: 7px 10px; background: none;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      color: var(--text-dim); cursor: pointer; transition: all 0.15s; font-size: 12px;
+    }
+    .btn-remove:hover { border-color: var(--error); color: var(--error); }
+
+    .clientes-empty {
+      background: var(--surface); border: 1px dashed var(--border);
+      border-radius: var(--radius); padding: 48px;
+      text-align: center; color: var(--text-muted); font-size: 13px;
+    }
+    .clientes-empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+
+    /* ── MODAL ADICIONAR CLIENTE ── */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
+      z-index: 200; display: none; align-items: center; justify-content: center;
+      padding: 24px;
+    }
+    .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
+    .modal {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 32px;
+      width: 100%; max-width: 420px;
+    }
+    .modal-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; margin-bottom: 24px; }
+    .form-group { margin-bottom: 16px; }
+    .form-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
+    .form-input {
+      width: 100%; padding: 11px 14px;
+      background: var(--surface2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text);
+      outline: none; transition: border-color 0.2s;
+    }
+    .form-input:focus { border-color: var(--accent); }
+    .form-input::placeholder { color: var(--text-dim); }
+    .modal-actions { display: flex; gap: 8px; margin-top: 24px; }
+    .btn-modal-cancel {
+      flex: 1; padding: 12px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); font-family: 'DM Mono', monospace;
+      font-size: 12px; color: var(--text-muted); cursor: pointer;
+      transition: border-color 0.2s;
+    }
+    .btn-modal-cancel:hover { border-color: var(--border2); }
+    .btn-modal-submit {
+      flex: 2; padding: 12px;
+      background: var(--accent); color: var(--bg);
+      border: none; border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-modal-submit:hover { opacity: 0.88; }
+    .btn-modal-submit:disabled { opacity: 0.4; cursor: not-allowed; }
+    .modal-erro { font-size: 12px; color: var(--error); margin-top: 12px; display: none; }
+    .modal-loading { font-size: 12px; color: var(--accent); margin-top: 12px; display: none; }
+
+    /* ── SPINNER ── */
+    .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── LOADING FULL ── */
+    .loading-full { min-height: calc(100vh - 60px); display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--text-muted); font-size: 13px; }
+
+    @media (max-width: 600px) {
+      nav { padding: 0 20px; }
+      .container { padding: 32px 20px; }
+      .stats-grid { grid-template-columns: 1fr; }
+      .cliente-stats { display: none; }
+      .login-card { padding: 28px 24px; }
+      .cliente-card { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">
+    <svg width="16" height="20" viewBox="0 0 19 24" fill="none">
+      <rect x="1" y="1" width="17" height="22" rx="2" stroke="#c8f060" stroke-width="1.5"/>
+      <polyline points="11,1 18,8" stroke="#c8f060" stroke-width="1.5"/>
+      <rect x="3" y="11" width="4" height="4" rx="0.5" fill="#c8f060"/>
+      <rect x="9" y="11" width="2" height="2" rx="0.3" fill="#c8f060" opacity="0.7"/>
+      <rect x="13" y="11" width="2" height="2" rx="0.3" fill="#c8f060" opacity="0.7"/>
+      <rect x="3" y="16" width="2" height="2" rx="0.3" fill="#c8f060" opacity="0.7"/>
+      <rect x="7" y="15" width="3" height="3" rx="0.5" fill="#c8f060"/>
+      <line x1="1" y1="20" x2="18" y2="20" stroke="#c8f060" stroke-width="1" opacity="0.35"/>
+      <circle cx="9.5" cy="20" r="1.2" fill="#c8f060" opacity="0.9"/>
+    </svg>
+    fatura<span>scan</span>
+  </a>
+  <div class="nav-right" id="nav-user-area" style="display:none;">
+    <div class="nav-user">
+      <img class="nav-user-foto" id="nav-foto" src="" alt="">
+      <span class="nav-user-nome" id="nav-nome"></span>
+    </div>
+    <button class="btn-logout" onclick="logout()">Sair</button>
+  </div>
+</nav>
+
+<!-- LOADING -->
+<div class="loading-full" id="screen-loading">
+  <div class="spinner"></div>
+  <span>A carregar...</span>
+</div>
+
+<!-- LOGIN -->
+<div id="screen-login" class="screen">
+  <div class="login-bg"></div>
+  <div class="login-logo">fatura<span>scan</span></div>
+  <div class="login-sub">Área reservada a contabilistas</div>
+  <div class="login-card">
+    <div class="login-title">Bem-vindo</div>
+    <div class="login-desc">Entra com a tua conta Google para aceder à gestão de clientes e faturas.</div>
+    <button class="btn-google" onclick="entrarComGoogle()">
+      <svg width="18" height="18" viewBox="0 0 18 18">
+        <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 002.38-5.88c0-.57-.05-.66-.15-1.18z"/>
+        <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 01-7.18-2.54H1.83v2.07A8 8 0 008.98 17z"/>
+        <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 010-3.04V5.41H1.83a8 8 0 000 7.18l2.67-2.07z"/>
+        <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 001.83 5.4L4.5 7.49a4.77 4.77 0 014.48-3.31z"/>
+      </svg>
+      Entrar com Google
+    </button>
+    <div class="login-note">Ao entrar, autorizas o FaturaScan a criar pastas e guardar ficheiros no Google Drive que indicares.</div>
+  </div>
+</div>
+
+<!-- ONBOARDING -->
+<div id="screen-onboarding" class="screen">
+  <div class="container">
+    <div class="onboarding-header">
+      <div class="onboarding-badge">✦ &nbsp;Configuração inicial</div>
+      <div class="page-title">Configura o teu Drive</div>
+      <div class="page-sub">Para começar, precisamos de saber onde guardar as faturas dos teus clientes no Google Drive.</div>
+    </div>
+
+    <div class="steps-onboarding">
+      <!-- Passo 1 -->
+      <div class="step-onboarding done">
+        <div class="step-num-circle">✓</div>
+        <div class="step-content">
+          <div class="step-onboarding-title">Login com Google</div>
+          <div class="step-onboarding-desc">Conta autenticada com sucesso.</div>
+        </div>
+      </div>
+
+      <!-- Passo 2 -->
+      <div class="step-onboarding" id="step-pasta">
+        <div class="step-num-circle">2</div>
+        <div class="step-content">
+          <div class="step-onboarding-title">Criar e partilhar uma pasta no Drive</div>
+          <div class="step-onboarding-desc">
+            1. Vai ao <strong>Google Drive</strong><br>
+            2. Cria uma pasta chamada <strong>FaturaScan</strong> (ou o nome que preferires)<br>
+            3. Clica com o botão direito → <strong>Partilhar</strong> → adiciona <strong>formigaplicada@gmail.com</strong> como Editor<br>
+            4. Copia o link da pasta e cola aqui em baixo
+          </div>
+          <div class="input-group">
+            <input type="text" class="input-drive" id="input-pasta-url" placeholder="https://drive.google.com/drive/folders/...">
+            <button class="btn-confirmar" id="btn-confirmar-pasta" onclick="confirmarPasta()">Confirmar</button>
+          </div>
+          <div class="step-feedback" id="pasta-feedback"></div>
+        </div>
+      </div>
+
+      <!-- Passo 3 -->
+      <div class="step-onboarding" id="step-clientes" style="opacity:0.4;">
+        <div class="step-num-circle">3</div>
+        <div class="step-content">
+          <div class="step-onboarding-title">Adicionar clientes</div>
+          <div class="step-onboarding-desc">Após confirmar a pasta, poderás adicionar os teus clientes e gerar links personalizados.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="screen-dashboard" class="screen">
+  <div class="container">
+    <div class="dashboard-header">
+      <div>
+        <div class="dashboard-title">Os teus clientes</div>
+        <div class="dashboard-sub" id="dashboard-pasta-nome"></div>
+      </div>
+      <button class="btn-add" onclick="abrirModalCliente()">
+        <span>+</span> Novo cliente
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-label">TOTAL CLIENTES</div>
+        <div class="stat-value" id="stat-clientes">—</div>
+        <div class="stat-sub">activos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">FATURAS PROCESSADAS</div>
+        <div class="stat-value" id="stat-faturas">—</div>
+        <div class="stat-sub">em breve</div>
+      </div>
+    </div>
+
+    <!-- Lista clientes -->
+    <div class="clientes-header">
+      <div class="clientes-label">Clientes</div>
+    </div>
+    <div class="clientes-list" id="clientes-list">
+      <div class="clientes-empty">
+        <div class="clientes-empty-icon">🏢</div>
+        A carregar clientes...
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL ADICIONAR CLIENTE -->
+<div class="modal-overlay" id="modal-cliente">
+  <div class="modal">
+    <div class="modal-title">Novo cliente</div>
+    <div class="form-group">
+      <label class="form-label">NIF da empresa *</label>
+      <input type="text" class="form-input" id="m-nif" placeholder="ex: 518668193" maxlength="9">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Nome da empresa *</label>
+      <input type="text" class="form-input" id="m-nome" placeholder="ex: Empresa, Lda">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Email (opcional)</label>
+      <input type="email" class="form-input" id="m-email" placeholder="ex: faturas@empresa.pt">
+    </div>
+    <div class="modal-erro" id="modal-erro"></div>
+    <div class="modal-loading" id="modal-loading">⏳ A criar cliente...</div>
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="fecharModalCliente()">Cancelar</button>
+      <button class="btn-modal-submit" id="btn-modal-submit" onclick="criarCliente()">Adicionar cliente →</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const BACKEND = 'https://faturascan-backend-336523636761.europe-west1.run.app';
+
+// ── ESTADO ───────────────────────────────────────────────────
+let session_token    = null;
+let contabilista     = null;
+let clientes         = [];
+
+// ── INIT ─────────────────────────────────────────────────────
+(async function init() {
+  // Ver se veio session no URL (após callback OAuth)
+  const params = new URLSearchParams(window.location.search);
+  const session_url = params.get('session');
+  const erro_url    = params.get('erro');
+
+  if (session_url) {
+    localStorage.setItem('fs_session', session_url);
+    // Limpar URL
+    window.history.replaceState({}, '', '/conta');
+  }
+
+  if (erro_url) {
+    mostrarScreen('login');
+    return;
+  }
+
+  session_token = localStorage.getItem('fs_session');
+
+  if (!session_token) {
+    mostrarScreen('login');
+    return;
+  }
+
+  // Tentar carregar dados do contabilista
+  try {
+    const dados = await apiGet('/auth/me');
+    contabilista = dados;
+    mostrarNavUser(dados);
+
+    if (!dados.onboarding_completo) {
+      mostrarScreen('onboarding');
+    } else {
+      mostrarScreen('dashboard');
+      await carregarDashboard();
+    }
+  } catch (err) {
+    // Sessão inválida
+    localStorage.removeItem('fs_session');
+    mostrarScreen('login');
+  }
+})();
+
+// ── NAVEGAÇÃO ─────────────────────────────────────────────────
+function mostrarScreen(nome) {
+  document.getElementById('screen-loading').style.display = 'none';
+  ['login', 'onboarding', 'dashboard'].forEach(s => {
+    document.getElementById('screen-' + s).classList.remove('active');
+  });
+  document.getElementById('screen-' + nome).classList.add('active');
+}
+
+function mostrarNavUser(dados) {
+  document.getElementById('nav-user-area').style.display = 'flex';
+  document.getElementById('nav-nome').textContent = dados.nome || dados.email;
+  if (dados.foto) {
+    document.getElementById('nav-foto').src = dados.foto;
+  } else {
+    document.getElementById('nav-foto').style.display = 'none';
+  }
+}
+
+// ── AUTH ─────────────────────────────────────────────────────
+function entrarComGoogle() {
+  window.location.href = BACKEND + '/auth/login';
+}
+
+async function logout() {
+  try {
+    await apiPost('/auth/logout', {});
+  } catch(e) {}
+  localStorage.removeItem('fs_session');
+  window.location.href = '/conta';
+}
+
+// ── ONBOARDING ───────────────────────────────────────────────
+async function confirmarPasta() {
+  const url      = document.getElementById('input-pasta-url').value.trim();
+  const feedback = document.getElementById('pasta-feedback');
+  const btn      = document.getElementById('btn-confirmar-pasta');
+
+  if (!url) {
+    feedback.textContent = 'Cola o link da pasta do Drive.';
+    feedback.className   = 'step-feedback erro';
+    return;
+  }
+
+  btn.disabled = true;
+  feedback.textContent = '⏳ A verificar...';
+  feedback.className   = 'step-feedback';
+
+  try {
+    const res = await apiPost('/onboarding/pasta', { pasta_url: url });
+    feedback.textContent = `✓ Pasta "${res.pasta.nome}" configurada com sucesso!`;
+    feedback.className   = 'step-feedback ok';
+
+    // Marcar passo 2 como done
+    document.getElementById('step-pasta').classList.add('done');
+    document.getElementById('step-pasta').querySelector('.step-num-circle').textContent = '✓';
+    document.getElementById('step-clientes').style.opacity = '1';
+
+    // Avançar para dashboard após 1.5s
+    setTimeout(async () => {
+      contabilista = await apiGet('/auth/me');
+      mostrarScreen('dashboard');
+      await carregarDashboard();
+    }, 1500);
+
+  } catch (err) {
+    feedback.textContent = err.message || 'Erro ao verificar a pasta.';
+    feedback.className   = 'step-feedback erro';
+    btn.disabled = false;
+  }
+}
+
+// ── DASHBOARD ────────────────────────────────────────────────
+async function carregarDashboard() {
+  if (contabilista?.pasta_drive_nome) {
+    document.getElementById('dashboard-pasta-nome').textContent = '📁 ' + contabilista.pasta_drive_nome;
+  }
+
+  try {
+    const res = await apiGet('/clientes');
+    clientes  = res.clientes || [];
+    renderClientes();
+    document.getElementById('stat-clientes').textContent = clientes.length;
+  } catch (err) {
+    console.error('Erro ao carregar clientes:', err);
+  }
+}
+
+function renderClientes() {
+  const list = document.getElementById('clientes-list');
+
+  if (!clientes.length) {
+    list.innerHTML = `
+      <div class="clientes-empty">
+        <div class="clientes-empty-icon">🏢</div>
+        Ainda não tens clientes.<br>Clica em "Novo cliente" para começar.
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = clientes.map(c => `
+    <div class="cliente-card" id="cliente-${c.token}">
+      <div class="cliente-avatar">🏢</div>
+      <div class="cliente-info">
+        <div class="cliente-nome">${c.nome}</div>
+        <div class="cliente-nif">NIF ${c.nif}</div>
+      </div>
+      <div class="cliente-stats">
+        <div class="cliente-stat">
+          <div class="cliente-stat-val">—</div>
+          <div class="cliente-stat-label">total</div>
+        </div>
+        <div class="cliente-stat">
+          <div class="cliente-stat-val">—</div>
+          <div class="cliente-stat-label">mês</div>
+        </div>
+      </div>
+      <div class="cliente-actions">
+        <button class="btn-copy" onclick="copiarLink('${c.token}', '${encodeURIComponent(c.link)}', this)">
+          Copiar link
+        </button>
+        <button class="btn-remove" onclick="removerCliente('${c.token}')" title="Remover cliente">✕</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function copiarLink(token, link_encoded, btn) {
+  const link = decodeURIComponent(link_encoded);
+  navigator.clipboard.writeText(link).then(() => {
+    btn.textContent = '✓ Copiado!';
+    btn.classList.add('copiado');
+    setTimeout(() => {
+      btn.textContent = 'Copiar link';
+      btn.classList.remove('copiado');
+    }, 2000);
+  });
+}
+
+async function removerCliente(token) {
+  if (!confirm('Tens a certeza que queres remover este cliente? A pasta no Drive não será apagada.')) return;
+  try {
+    await apiDelete('/clientes/' + token);
+    clientes = clientes.filter(c => c.token !== token);
+    renderClientes();
+    document.getElementById('stat-clientes').textContent = clientes.length;
+  } catch (err) {
+    alert('Erro ao remover cliente: ' + err.message);
+  }
+}
+
+// ── MODAL CLIENTE ────────────────────────────────────────────
+function abrirModalCliente() {
+  document.getElementById('modal-cliente').classList.add('open');
+  document.getElementById('m-nif').focus();
+  document.getElementById('modal-erro').style.display = 'none';
+  document.getElementById('modal-loading').style.display = 'none';
+  document.getElementById('m-nif').value   = '';
+  document.getElementById('m-nome').value  = '';
+  document.getElementById('m-email').value = '';
+}
+
+function fecharModalCliente() {
+  document.getElementById('modal-cliente').classList.remove('open');
+}
+
+async function criarCliente() {
+  const nif   = document.getElementById('m-nif').value.trim();
+  const nome  = document.getElementById('m-nome').value.trim();
+  const email = document.getElementById('m-email').value.trim();
+  const erro  = document.getElementById('modal-erro');
+  const load  = document.getElementById('modal-loading');
+  const btn   = document.getElementById('btn-modal-submit');
+
+  erro.style.display = 'none';
+
+  if (!nif || !/^\d{9}$/.test(nif)) {
+    erro.textContent = 'NIF inválido — deve ter 9 dígitos.';
+    erro.style.display = 'block'; return;
+  }
+  if (!nome) {
+    erro.textContent = 'Nome obrigatório.';
+    erro.style.display = 'block'; return;
+  }
+
+  btn.disabled = true;
+  load.style.display = 'block';
+
+  try {
+    const res = await apiPost('/clientes', { nif, nome, email });
+    clientes.unshift(res.cliente);
+    renderClientes();
+    document.getElementById('stat-clientes').textContent = clientes.length;
+    fecharModalCliente();
+  } catch (err) {
+    erro.textContent = err.message || 'Erro ao criar cliente.';
+    erro.style.display = 'block';
+    btn.disabled = false;
+    load.style.display = 'none';
+  }
+}
+
+// Fechar modal ao clicar fora
+document.getElementById('modal-cliente').addEventListener('click', function(e) {
+  if (e.target === this) fecharModalCliente();
+});
+
+// ── API HELPERS ──────────────────────────────────────────────
+async function apiGet(path) {
+  const res = await fetch(BACKEND + path, {
+    headers: { 'Authorization': 'Bearer ' + session_token }
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.erro || 'Erro ' + res.status);
+  return json;
+}
+
+async function apiPost(path, body) {
+  const res = await fetch(BACKEND + path, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session_token },
+    body:    JSON.stringify(body),
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.erro || 'Erro ' + res.status);
+  return json;
+}
+
+async function apiDelete(path) {
+  const res = await fetch(BACKEND + path, {
+    method:  'DELETE',
+    headers: { 'Authorization': 'Bearer ' + session_token }
+  });
+  const json = await res.json();
+  if (!res.ok) throw new Error(json.erro || 'Erro ' + res.status);
+  return json;
+}
+</script>
+</body>
+</html>

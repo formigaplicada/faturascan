@@ -364,7 +364,7 @@
     <div class="onboarding-header">
       <div class="onboarding-badge">✦ &nbsp;Configuração inicial</div>
       <div class="page-title">Configura o teu Drive</div>
-      <div class="page-sub">Para começar, precisamos de saber onde guardar as faturas dos teus clientes no Google Drive.</div>
+      <div class="page-sub">Escolhe a pasta do Google Drive onde ficará a pasta FaturaScan com as faturas dos teus clientes.</div>
     </div>
 
     <div class="steps-onboarding">
@@ -381,17 +381,14 @@
       <div class="step-onboarding" id="step-pasta">
         <div class="step-num-circle">2</div>
         <div class="step-content">
-          <div class="step-onboarding-title">Criar e partilhar uma pasta no Drive</div>
+          <div class="step-onboarding-title">Escolher pasta no Drive</div>
           <div class="step-onboarding-desc">
-            1. Vai ao <strong>Google Drive</strong><br>
-            2. Cria uma pasta chamada <strong>FaturaScan</strong> (ou o nome que preferires)<br>
-            3. Clica com o botão direito → <strong>Partilhar</strong> → adiciona <strong>formigaplicada@gmail.com</strong> como Editor<br>
-            4. Copia o link da pasta e cola aqui em baixo
+            Clica no botão abaixo para escolher a pasta onde o FaturaScan vai criar a sua pasta de trabalho.<br>
+            Será criada automaticamente uma pasta chamada <strong style="color:var(--accent)">FaturaScan</strong> dentro da pasta que escolheres.
           </div>
-          <div class="input-group">
-            <input type="text" class="input-drive" id="input-pasta-url" placeholder="https://drive.google.com/drive/folders/...">
-            <button class="btn-confirmar" id="btn-confirmar-pasta" onclick="confirmarPasta()">Confirmar</button>
-          </div>
+          <button class="btn-confirmar" id="btn-picker" onclick="abrirPicker()" style="width:auto;margin-top:4px;">
+            📁 &nbsp;Escolher pasta no Drive
+          </button>
           <div class="step-feedback" id="pasta-feedback"></div>
         </div>
       </div>
@@ -401,7 +398,7 @@
         <div class="step-num-circle">3</div>
         <div class="step-content">
           <div class="step-onboarding-title">Adicionar clientes</div>
-          <div class="step-onboarding-desc">Após confirmar a pasta, poderás adicionar os teus clientes e gerar links personalizados.</div>
+          <div class="step-onboarding-desc">Após configurar a pasta, poderás adicionar os teus clientes e gerar links personalizados.</div>
         </div>
       </div>
     </div>
@@ -558,32 +555,75 @@ async function logout() {
 }
 
 // ── ONBOARDING ───────────────────────────────────────────────
-async function confirmarPasta() {
-  const url      = document.getElementById('input-pasta-url').value.trim();
-  const feedback = document.getElementById('pasta-feedback');
-  const btn      = document.getElementById('btn-confirmar-pasta');
+const PICKER_API_KEY = 'AIzaSyDr71wDPvdUpCNYTu1-x74g59E-_nqMSeY';
+let pickerApiLoaded  = false;
+let oauthAccessToken = null;
 
-  if (!url) {
-    feedback.textContent = 'Cola o link da pasta do Drive.';
+function abrirPicker() {
+  const btn      = document.getElementById('btn-picker');
+  const feedback = document.getElementById('pasta-feedback');
+  btn.disabled   = true;
+  feedback.textContent = '';
+
+  apiGet('/auth/token').then(res => {
+    oauthAccessToken = res.access_token;
+    if (pickerApiLoaded) {
+      mostrarPicker();
+    } else {
+      gapi.load('picker', () => {
+        pickerApiLoaded = true;
+        mostrarPicker();
+      });
+    }
+  }).catch(err => {
+    feedback.textContent = 'Erro ao obter token: ' + err.message;
     feedback.className   = 'step-feedback erro';
+    btn.disabled = false;
+  });
+}
+
+function mostrarPicker() {
+  const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
+    .setSelectFolderEnabled(true)
+    .setMimeTypes('application/vnd.google-apps.folder');
+
+  const picker = new google.picker.PickerBuilder()
+    .addView(view)
+    .setOAuthToken(oauthAccessToken)
+    .setDeveloperKey(PICKER_API_KEY)
+    .setCallback(onPastaEscolhida)
+    .setTitle('Escolhe a pasta onde criar a pasta FaturaScan')
+    .build();
+
+  picker.setVisible(true);
+}
+
+async function onPastaEscolhida(data) {
+  const feedback = document.getElementById('pasta-feedback');
+  const btn      = document.getElementById('btn-picker');
+
+  if (data.action !== google.picker.Action.PICKED) {
+    btn.disabled = false;
     return;
   }
 
-  btn.disabled = true;
-  feedback.textContent = '⏳ A verificar...';
+  const pasta = data.docs[0];
+  feedback.textContent = 'A criar pasta FaturaScan...';
   feedback.className   = 'step-feedback';
 
   try {
-    const res = await apiPost('/onboarding/pasta', { pasta_url: url });
-    feedback.textContent = `✓ Pasta "${res.pasta.nome}" configurada com sucesso!`;
+    const res = await apiPost('/onboarding/pasta', {
+      pasta_pai_id:   pasta.id,
+      pasta_pai_nome: pasta.name,
+    });
+
+    feedback.textContent = 'Pasta ' + res.pasta.nome + ' criada com sucesso!';
     feedback.className   = 'step-feedback ok';
 
-    // Marcar passo 2 como done
     document.getElementById('step-pasta').classList.add('done');
-    document.getElementById('step-pasta').querySelector('.step-num-circle').textContent = '✓';
+    document.getElementById('step-pasta').querySelector('.step-num-circle').textContent = 'ok';
     document.getElementById('step-clientes').style.opacity = '1';
 
-    // Avançar para dashboard após 1.5s
     setTimeout(async () => {
       contabilista = await apiGet('/auth/me');
       mostrarScreen('dashboard');
@@ -591,7 +631,7 @@ async function confirmarPasta() {
     }, 1500);
 
   } catch (err) {
-    feedback.textContent = err.message || 'Erro ao verificar a pasta.';
+    feedback.textContent = err.message || 'Erro ao criar pasta.';
     feedback.className   = 'step-feedback erro';
     btn.disabled = false;
   }
@@ -763,5 +803,7 @@ async function apiDelete(path) {
   return json;
 }
 </script>
+<script src="https://apis.google.com/js/api.js"></script>
+<script src="https://accounts.google.com/gsi/client"></script>
 </body>
 </html>

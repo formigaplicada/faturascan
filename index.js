@@ -65,7 +65,7 @@ app.get('/auth/callback', async (req, res) => {
   const { code } = req.query;
 
   if (!code) {
-    return res.redirect(`${process.env.FRONTEND_URL}/conta?erro=sem_codigo`);
+    return res.redirect(`${process.env.FRONTEND_URL}conta?erro=sem_codigo`);
   }
 
   try {
@@ -101,11 +101,11 @@ app.get('/auth/callback', async (req, res) => {
     });
 
     // Redirecionar para o frontend com o token de sessão
-    res.redirect(`${process.env.FRONTEND_URL}/conta?session=${session_token}`);
+    res.redirect(`${process.env.FRONTEND_URL}conta?session=${session_token}`);
 
   } catch (err) {
     console.error('Erro no callback OAuth:', err);
-    res.redirect(`${process.env.FRONTEND_URL}/conta?erro=auth_falhou`);
+    res.redirect(`${process.env.FRONTEND_URL}conta?erro=auth_falhou`);
   }
 });
 

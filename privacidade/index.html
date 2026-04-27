@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Política de Privacidade — FaturaScan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #c8f060;
+      --ink: #0f0f0d;
+      --paper: #f5f4ef;
+      --paper2: #eceae2;
+      --muted: #6e6e60;
+      --border: #d8d6ce;
+      --radius: 14px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Mono', monospace; background: var(--paper); color: var(--ink); line-height: 1.7; }
+
+    nav {
+      height: 64px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px; background: rgba(245,244,239,0.95);
+      backdrop-filter: blur(12px); position: sticky; top: 0; z-index: 10;
+    }
+    .nav-logo { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--ink); text-decoration: none; }
+    .nav-logo span { color: var(--muted); font-weight: 300; font-style: italic; }
+    .nav-back { font-size: 12px; color: var(--muted); text-decoration: none; }
+    .nav-back:hover { color: var(--ink); }
+
+    .wrap { max-width: 720px; margin: 0 auto; padding: 64px 32px 120px; }
+
+    .doc-label { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
+    h1 { font-family: 'Fraunces', serif; font-size: 36px; font-weight: 600; letter-spacing: -1px; line-height: 1.15; margin-bottom: 12px; }
+    .doc-meta { font-size: 12px; color: var(--muted); margin-bottom: 48px; padding-bottom: 32px; border-bottom: 1px solid var(--border); }
+
+    h2 { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; margin-top: 48px; margin-bottom: 16px; letter-spacing: -0.3px; }
+    p { font-size: 13px; color: #2a2a24; margin-bottom: 16px; }
+    ul { margin-bottom: 16px; padding-left: 20px; }
+    ul li { font-size: 13px; color: #2a2a24; margin-bottom: 8px; }
+    strong { font-weight: 500; color: var(--ink); }
+    a { color: var(--ink); }
+    a:hover { opacity: 0.7; }
+
+    .highlight {
+      background: white; border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px 24px; margin: 24px 0;
+    }
+    .highlight p { margin-bottom: 0; }
+
+    footer { border-top: 1px solid var(--border); padding: 32px; text-align: center; font-size: 11px; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="/" class="nav-logo">fatura<span>scan</span></a>
+  <a href="/" class="nav-back">← Voltar ao início</a>
+</nav>
+
+<div class="wrap">
+  <div class="doc-label">Documento legal</div>
+  <h1>Política de Privacidade</h1>
+  <div class="doc-meta">
+    Última actualização: 27 de Abril de 2026 &nbsp;·&nbsp; Formigaplicada &nbsp;·&nbsp; Portugal
+  </div>
+
+  <div class="highlight">
+    <p>Esta política descreve como o FaturaScan recolhe, utiliza e protege os dados dos seus utilizadores. Ao utilizar o FaturaScan, aceitas os termos aqui descritos.</p>
+  </div>
+
+  <h2>1. Quem somos</h2>
+  <p>O FaturaScan é um serviço desenvolvido pela <strong>Formigaplicada</strong>, com sede em Portugal. Para questões relacionadas com privacidade, podes contactar-nos através do endereço <a href="mailto:miguel@formigaplicada.pt">miguel@formigaplicada.pt</a>.</p>
+
+  <h2>2. Que dados recolhemos</h2>
+  <p>O FaturaScan recolhe os seguintes dados:</p>
+  <ul>
+    <li><strong>Dados de autenticação Google</strong> — nome, endereço de email e fotografia de perfil, obtidos através do processo de login com Google.</li>
+    <li><strong>Tokens de acesso ao Google Drive</strong> — necessários para criar pastas e guardar ficheiros no Google Drive do utilizador.</li>
+    <li><strong>Dados de clientes</strong> — NIF, nome e email das empresas clientes registadas pelos contabilistas na plataforma.</li>
+    <li><strong>Dados de faturas</strong> — informação extraída dos QR codes das faturas portuguesas: NIF do emissor, NIF do cliente, data, número da fatura, ATCUD e valores monetários.</li>
+    <li><strong>Imagens de faturas</strong> — fotografias tiradas pelos utilizadores para documentação das faturas físicas.</li>
+  </ul>
+
+  <h2>3. Como utilizamos os dados</h2>
+  <p>Os dados recolhidos são utilizados exclusivamente para:</p>
+  <ul>
+    <li>Autenticar os utilizadores na plataforma.</li>
+    <li>Criar e organizar pastas no Google Drive do contabilista.</li>
+    <li>Guardar as imagens das faturas e os seus metadados no Google Drive do contabilista.</li>
+    <li>Gerar links personalizados para cada cliente do contabilista.</li>
+    <li>Verificar a validade e duplicação de faturas.</li>
+  </ul>
+  <p><strong>Não vendemos, partilhamos nem utilizamos os dados para fins publicitários.</strong></p>
+
+  <h2>4. Acesso ao Google Drive</h2>
+  <p>O FaturaScan solicita acesso ao Google Drive do contabilista com o scope <strong>drive.file</strong>. Este scope permite à aplicação:</p>
+  <ul>
+    <li>Criar pastas e ficheiros que a própria aplicação gera.</li>
+    <li>Aceder apenas às pastas e ficheiros criados pela aplicação — não tem acesso a outros ficheiros do Drive do utilizador.</li>
+  </ul>
+  <p>As faturas e metadados são guardados exclusivamente no Google Drive do contabilista, numa pasta por ele escolhida durante a configuração inicial. A Formigaplicada não tem acesso directo a esses ficheiros após o seu armazenamento.</p>
+
+  <h2>5. Onde guardamos os dados</h2>
+  <p>Os dados de sessão e de configuração (identificadores, tokens, lista de clientes) são guardados no <strong>Google Cloud Firestore</strong>, em servidores localizados na Europa (região <em>europe-west1</em>, Bélgica). Os ficheiros de faturas são guardados directamente no <strong>Google Drive</strong> do contabilista.</p>
+
+  <h2>6. Durante quanto tempo guardamos os dados</h2>
+  <ul>
+    <li><strong>Sessões</strong> — expiram automaticamente ao fim de 7 dias.</li>
+    <li><strong>Dados de conta</strong> — mantidos enquanto a conta estiver activa.</li>
+    <li><strong>Ficheiros no Drive</strong> — geridos exclusivamente pelo contabilista, que pode apagá-los a qualquer momento.</li>
+  </ul>
+
+  <h2>7. Os teus direitos</h2>
+  <p>Nos termos do Regulamento Geral sobre a Protecção de Dados (RGPD), tens direito a:</p>
+  <ul>
+    <li>Aceder aos dados que temos sobre ti.</li>
+    <li>Rectificar dados incorrectos.</li>
+    <li>Solicitar a eliminação dos teus dados.</li>
+    <li>Revogar o acesso ao Google Drive a qualquer momento, através das definições da tua conta Google em <a href="https://myaccount.google.com/permissions" target="_blank">myaccount.google.com/permissions</a>.</li>
+  </ul>
+  <p>Para exercer qualquer um destes direitos, contacta-nos em <a href="mailto:miguel@formigaplicada.pt">miguel@formigaplicada.pt</a>.</p>
+
+  <h2>8. Segurança</h2>
+  <p>Adoptamos medidas técnicas adequadas para proteger os dados, incluindo transmissão encriptada via HTTPS e armazenamento em infra-estrutura Google Cloud com controlos de acesso rigorosos. Os tokens de acesso são armazenados de forma segura e nunca expostos publicamente.</p>
+
+  <h2>9. Cookies e armazenamento local</h2>
+  <p>O FaturaScan utiliza o <strong>localStorage</strong> do browser exclusivamente para guardar o token de sessão do utilizador autenticado. Não utilizamos cookies de rastreamento nem ferramentas de análise de terceiros.</p>
+
+  <h2>10. Alterações a esta política</h2>
+  <p>Podemos actualizar esta política ocasionalmente. Quando o fizermos, actualizamos a data no topo do documento. Para alterações significativas, notificaremos os utilizadores por email.</p>
+
+  <h2>11. Contacto</h2>
+  <p>Para qualquer questão relacionada com privacidade ou protecção de dados:</p>
+  <ul>
+    <li><strong>Email:</strong> <a href="mailto:miguel@formigaplicada.pt">miguel@formigaplicada.pt</a></li>
+    <li><strong>Responsável:</strong> Formigaplicada, Portugal</li>
+  </ul>
+</div>
+
+<footer>
+  © 2026 Formigaplicada · <a href="/">faturascan.com</a>
+</footer>
+
+</body>
+</html>

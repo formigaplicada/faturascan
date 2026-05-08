@@ -3,390 +3,253 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>FaturaScan — Área do Contabilista</title>
+  <title>FaturaScan — Faturas sem esforço</title>
+  <meta name="description" content="A solução para contabilistas que querem receber as faturas dos clientes directamente no Google Drive, sem apps, sem contas, sem complicações.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,600;1,9..144,300&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;1,9..144,300;1,9..144,400&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0f0f0d;
-      --surface: #1a1a16;
-      --surface2: #242420;
-      --border: #2e2e28;
-      --border2: #3e3e38;
       --accent: #c8f060;
-      --accent-dim: rgba(200,240,96,0.12);
-      --accent-border: rgba(200,240,96,0.25);
-      --text: #e8e8e0;
-      --text-muted: #6e6e60;
-      --text-dim: #3e3e34;
-      --success: #60f0a0;
-      --error: #f06060;
-      --warning: #f0a060;
-      --radius: 12px;
+      --accent-dark: #9abe3a;
+      --ink: #0f0f0d;
+      --ink2: #1e1e1a;
+      --paper: #f5f4ef;
+      --paper2: #eceae2;
+      --muted: #6e6e60;
+      --border: #d8d6ce;
+      --radius: 14px;
       --radius-sm: 8px;
     }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    html { height: 100%; }
+    html { scroll-behavior: smooth; }
     body {
       font-family: 'DM Mono', monospace;
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
+      background: var(--paper);
+      color: var(--ink);
       line-height: 1.6;
+      overflow-x: hidden;
     }
     body::before {
       content: '';
       position: fixed; inset: 0;
       background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
-      opacity: 0.03; pointer-events: none; z-index: 9999;
+      opacity: 0.025; pointer-events: none; z-index: 9999;
     }
 
-    /* ── NAV ── */
+    /* NAV */
     nav {
-      height: 60px;
-      border-bottom: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 32px;
       position: sticky; top: 0; z-index: 100;
-      background: rgba(15,15,13,0.95);
+      background: rgba(245,244,239,0.92);
       backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      height: 64px;
     }
-    .nav-logo { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; color: var(--accent); letter-spacing: -0.5px; text-decoration: none; display: flex; align-items: center; gap: 8px; }
-    .nav-logo span { color: var(--text-muted); font-weight: 300; font-style: italic; }
-    .nav-right { display: flex; align-items: center; gap: 16px; }
-    .nav-user { display: flex; align-items: center; gap: 10px; }
-    .nav-user-foto { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--border2); object-fit: cover; }
-    .nav-user-nome { font-size: 12px; color: var(--text-muted); max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .btn-logout { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 5px 12px; font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted); cursor: pointer; transition: border-color 0.2s, color 0.2s; }
-    .btn-logout:hover { border-color: var(--error); color: var(--error); }
+    .nav-logo { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; color: var(--ink); text-decoration: none; letter-spacing: -0.5px; display: flex; align-items: center; gap: 8px; }
+    .nav-logo span { color: var(--muted); font-weight: 300; font-style: italic; }
+    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links a { font-size: 12px; color: var(--muted); text-decoration: none; letter-spacing: 0.5px; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--ink); }
+    .nav-cta { background: var(--ink) !important; color: var(--accent) !important; padding: 8px 18px; border-radius: var(--radius-sm); font-weight: 500; }
+    .nav-cta:hover { opacity: 0.85; }
 
-    /* ── LAYOUT ── */
-    .container { max-width: 900px; margin: 0 auto; padding: 48px 32px; }
-
-    /* ── ECRÃS ── */
-    .screen { display: none; animation: fadeIn 0.3s ease; }
-    .screen.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* ── LOGIN ── */
-    #screen-login {
-      min-height: calc(100vh - 60px);
-      display: none; flex-direction: column;
+    /* HERO */
+    .hero-wrap { max-width: 1100px; margin: 0 auto; padding: 0 32px; }
+    .hero {
+      min-height: 90vh; display: flex; flex-direction: column;
       align-items: center; justify-content: center;
-      padding: 48px 32px; text-align: center;
-      position: relative;
+      padding: 80px 0; text-align: center; position: relative;
     }
-    #screen-login.active { display: flex; }
-    .login-bg {
+    .hero-bg {
       position: absolute; inset: 0;
-      background: radial-gradient(ellipse 60% 50% at 50% 30%, rgba(200,240,96,0.06) 0%, transparent 70%);
+      background: radial-gradient(ellipse 80% 60% at 50% 0%, rgba(200,240,96,0.12) 0%, transparent 70%);
       pointer-events: none;
     }
-    .login-logo { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 600; color: var(--accent); margin-bottom: 8px; letter-spacing: -1px; }
-    .login-logo span { color: var(--text-muted); font-weight: 300; font-style: italic; }
-    .login-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 48px; }
-    .login-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 40px 48px;
-      max-width: 400px; width: 100%;
-      position: relative;
-    }
-    .login-title { font-family: 'Fraunces', serif; font-size: 22px; font-weight: 600; margin-bottom: 8px; }
-    .login-desc { font-size: 12px; color: var(--text-muted); margin-bottom: 32px; line-height: 1.6; }
-    .btn-google {
-      width: 100%; padding: 14px 20px;
-      background: white; color: #1a1a1a;
-      border: none; border-radius: var(--radius-sm);
-      font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
-      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
-      transition: opacity 0.15s, transform 0.15s;
-      letter-spacing: 0.3px;
-    }
-    .btn-google:hover { opacity: 0.92; transform: translateY(-1px); }
-    .btn-google:active { transform: scale(0.98); }
-    .btn-google svg { flex-shrink: 0; }
-    .login-note { margin-top: 20px; font-size: 11px; color: var(--text-dim); line-height: 1.6; }
-
-    /* ── ONBOARDING ── */
-    .onboarding-header { margin-bottom: 40px; }
-    .onboarding-badge {
+    .hero-badge {
       display: inline-flex; align-items: center; gap: 8px;
-      background: var(--accent-dim); border: 1px solid var(--accent-border);
-      color: var(--accent); padding: 5px 14px; border-radius: 20px;
-      font-size: 11px; letter-spacing: 1px; margin-bottom: 20px;
+      background: var(--ink); color: var(--accent);
+      padding: 6px 16px; border-radius: 20px;
+      font-size: 11px; letter-spacing: 1.5px; margin-bottom: 32px;
+      animation: fadeUp 0.6s ease both;
     }
-    .page-title { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 8px; }
-    .page-sub { font-size: 13px; color: var(--text-muted); line-height: 1.6; max-width: 520px; }
+    .badge-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s ease infinite; }
+    @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
+    h1 {
+      font-family: 'Fraunces', serif;
+      font-size: clamp(42px, 7vw, 76px);
+      font-weight: 600; line-height: 1.05;
+      letter-spacing: -2px; max-width: 800px;
+      margin-bottom: 24px;
+      animation: fadeUp 0.6s 0.1s ease both;
+    }
+    h1 em { font-style: italic; font-weight: 300; color: var(--muted); }
+    h1 mark { background: var(--accent); color: var(--ink); padding: 2px 10px; border-radius: 6px; font-style: normal; }
+    .hero-sub {
+      font-size: 15px; color: var(--muted); max-width: 520px;
+      line-height: 1.7; margin-bottom: 48px;
+      animation: fadeUp 0.6s 0.2s ease both;
+    }
+    .hero-actions { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; animation: fadeUp 0.6s 0.3s ease both; }
+    .btn-primary {
+      background: var(--ink); color: var(--accent);
+      padding: 16px 32px; border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+      letter-spacing: 0.5px; text-decoration: none; border: none; cursor: pointer;
+      transition: transform 0.15s, opacity 0.15s; display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-primary:hover { opacity: 0.85; transform: translateY(-1px); }
+    .btn-secondary {
+      background: transparent; color: var(--ink);
+      padding: 16px 32px; border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 13px;
+      letter-spacing: 0.5px; text-decoration: none;
+      border: 1.5px solid var(--border); cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s;
+      display: inline-flex; align-items: center; gap: 8px;
+    }
+    .btn-secondary:hover { border-color: var(--ink); transform: translateY(-1px); }
+    .hero-note { margin-top: 20px; font-size: 11px; color: var(--muted); animation: fadeUp 0.6s 0.4s ease both; }
+    .hero-note strong { color: var(--accent-dark); }
 
-    .steps-onboarding { display: flex; flex-direction: column; gap: 16px; margin: 40px 0; }
-    .step-onboarding {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px 28px;
-      display: flex; gap: 20px; align-items: flex-start;
-    }
-    .step-onboarding.done { border-color: rgba(96,240,160,0.3); }
-    .step-num-circle {
-      width: 32px; height: 32px; border-radius: 50%;
-      background: var(--surface2); border: 1px solid var(--border2);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 500; color: var(--text-muted);
-      flex-shrink: 0; margin-top: 2px;
-    }
-    .step-onboarding.done .step-num-circle { background: rgba(96,240,160,0.15); border-color: rgba(96,240,160,0.4); color: var(--success); }
-    .step-content { flex: 1; }
-    .step-onboarding-title { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
-    .step-onboarding-desc { font-size: 12px; color: var(--text-muted); line-height: 1.6; margin-bottom: 12px; }
-    .step-onboarding-desc strong { color: var(--accent); font-weight: 500; }
+    /* MOCK PHONE */
+    .hero-preview { margin-top: 56px; width: 100%; max-width: 300px; animation: fadeUp 0.8s 0.5s ease both; }
+    .mock-phone { background: var(--ink); border-radius: 24px; padding: 20px 16px; border: 2px solid #2e2e28; box-shadow: 0 40px 80px rgba(0,0,0,0.18); }
+    .mock-header { display: flex; align-items: center; justify-content: space-between; padding-bottom: 14px; border-bottom: 1px solid #2e2e28; margin-bottom: 14px; }
+    .mock-logo-text { font-family: 'Fraunces', serif; font-size: 16px; color: var(--accent); font-weight: 600; }
+    .mock-logo-text span { color: #6e6e60; font-weight: 300; font-style: italic; }
+    .mock-dots { display: flex; gap: 5px; }
+    .mock-dot { width: 5px; height: 5px; border-radius: 50%; background: #3e3e34; }
+    .mock-dot.on { background: var(--accent); }
+    .mock-step { background: #242420; border-radius: 10px; padding: 12px; margin-bottom: 8px; display: flex; align-items: center; gap: 10px; }
+    .mock-step-icon { width: 34px; height: 34px; border-radius: 8px; background: #1a1a16; border: 1px solid #2e2e28; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+    .mock-step-icon.active { border-color: var(--accent); }
+    .mock-step-label { font-size: 11px; color: #e8e8e0; }
+    .mock-step-sub { font-size: 10px; color: #6e6e60; margin-top: 2px; }
+    .mock-pill { display: inline-block; background: rgba(200,240,96,0.15); color: var(--accent); border: 1px solid rgba(200,240,96,0.3); border-radius: 20px; padding: 2px 8px; font-size: 10px; margin-top: 4px; }
 
-    .input-group { display: flex; gap: 8px; }
-    .input-drive {
-      flex: 1; padding: 11px 14px;
-      background: var(--surface2); border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text);
-      outline: none; transition: border-color 0.2s;
-    }
-    .input-drive:focus { border-color: var(--accent); }
-    .input-drive::placeholder { color: var(--text-dim); }
-    .btn-confirmar {
-      padding: 11px 20px;
-      background: var(--accent); color: var(--bg);
-      border: none; border-radius: var(--radius-sm);
-      font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
-      cursor: pointer; white-space: nowrap;
-      transition: opacity 0.15s, transform 0.15s;
-    }
-    .btn-confirmar:hover { opacity: 0.88; transform: translateY(-1px); }
-    .btn-confirmar:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-    .step-feedback { font-size: 11px; margin-top: 8px; }
-    .step-feedback.ok { color: var(--success); }
-    .step-feedback.erro { color: var(--error); }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)} }
 
-    /* ── DASHBOARD ── */
-    .dashboard-header {
-      display: flex; align-items: flex-start; justify-content: space-between;
-      margin-bottom: 32px; gap: 16px; flex-wrap: wrap;
-    }
-    .dashboard-title { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 600; letter-spacing: -0.5px; margin-bottom: 4px; }
-    .dashboard-sub { font-size: 12px; color: var(--text-muted); }
+    /* SECTIONS */
+    .section-wrap { max-width: 1100px; margin: 0 auto; padding: 100px 32px; }
+    .divider { max-width: 1100px; margin: 0 auto; height: 1px; background: var(--border); }
+    .section-label { font-size: 11px; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 16px; }
+    .section-title { font-family: 'Fraunces', serif; font-size: clamp(28px, 4vw, 44px); font-weight: 600; line-height: 1.15; letter-spacing: -1px; margin-bottom: 16px; }
+    .section-title em { font-style: italic; font-weight: 300; color: var(--muted); }
+    .section-sub { font-size: 14px; color: var(--muted); max-width: 480px; line-height: 1.7; }
 
-    /* Stats */
-    .stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 32px; }
-    .stat-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px 24px;
-    }
-    .stat-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 8px; }
-    .stat-value { font-family: 'Fraunces', serif; font-size: 36px; font-weight: 600; color: var(--accent); letter-spacing: -1px; line-height: 1; }
-    .stat-sub { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+    /* STEPS */
+    .steps-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 0; margin-top: 56px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .step-card { background: white; padding: 36px 32px; transition: background 0.2s; }
+    .step-card:nth-child(2) { border-left: 1px solid var(--border); border-right: 1px solid var(--border); }
+    .step-card:hover { background: #fafaf7; }
+    .step-num { font-family: 'Fraunces', serif; font-size: 52px; font-weight: 600; color: var(--paper2); line-height: 1; margin-bottom: 16px; letter-spacing: -2px; }
+    .step-icon { width: 44px; height: 44px; background: var(--ink); border-radius: 10px; display: flex; align-items: center; justify-content: center; margin-bottom: 18px; }
+    .step-title { font-size: 15px; font-weight: 500; margin-bottom: 8px; }
+    .step-desc { font-size: 13px; color: var(--muted); line-height: 1.6; }
 
-    /* Clientes */
-    .clientes-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-    .clientes-label { font-size: 11px; color: var(--text-muted); letter-spacing: 1.5px; text-transform: uppercase; }
-    .btn-add {
-      display: flex; align-items: center; gap: 6px;
-      background: var(--accent); color: var(--bg);
-      border: none; border-radius: var(--radius-sm);
-      padding: 9px 16px; font-family: 'DM Mono', monospace;
-      font-size: 12px; font-weight: 500; cursor: pointer;
-      transition: opacity 0.15s, transform 0.15s;
-    }
-    .btn-add:hover { opacity: 0.88; transform: translateY(-1px); }
+    /* AUDIENCE */
+    .audience-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 56px; }
+    .audience-card { border-radius: var(--radius); padding: 40px 36px; }
+    .audience-card.dark { background: var(--ink); color: white; }
+    .audience-card.light { background: white; border: 1px solid var(--border); }
+    .audience-tag { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; padding: 5px 12px; border-radius: 20px; display: inline-block; margin-bottom: 24px; }
+    .audience-card.dark .audience-tag { background: rgba(200,240,96,0.12); color: var(--accent); border: 1px solid rgba(200,240,96,0.25); }
+    .audience-card.light .audience-tag { background: var(--paper2); color: var(--muted); }
+    .audience-title { font-family: 'Fraunces', serif; font-size: 24px; font-weight: 600; line-height: 1.2; margin-bottom: 24px; letter-spacing: -0.5px; }
+    .audience-card.dark .audience-title { color: white; }
+    .audience-list { list-style: none; display: flex; flex-direction: column; gap: 12px; }
+    .audience-list li { font-size: 13px; display: flex; gap: 10px; align-items: flex-start; }
+    .audience-card.dark .audience-list li { color: #a0a090; }
+    .audience-card.light .audience-list li { color: var(--muted); }
+    .check { width: 18px; height: 18px; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 1px; font-size: 10px; }
+    .audience-card.dark .check { background: rgba(200,240,96,0.15); color: var(--accent); }
+    .audience-card.light .check { background: var(--paper2); color: var(--ink); }
 
-    .clientes-list { display: flex; flex-direction: column; gap: 8px; }
-    .cliente-card {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 20px 24px;
-      display: flex; align-items: center; gap: 16px;
-      transition: border-color 0.2s;
+    /* PRICING */
+    .pricing-wrap { background: var(--ink2); border-radius: 24px; padding: 80px 60px; max-width: 1100px; margin: 0 auto; }
+    .trial-badge { display: inline-flex; align-items: center; gap: 8px; background: rgba(200,240,96,0.1); border: 1px solid rgba(200,240,96,0.2); color: var(--accent); padding: 10px 20px; border-radius: 20px; font-size: 12px; margin-top: 20px; margin-bottom: 56px; }
+    .pricing-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .plan-card { border-radius: var(--radius); padding: 36px 32px; }
+    .plan-card.standard { background: #242420; border: 1px solid #2e2e28; }
+    .plan-card.pro { background: var(--accent); }
+    .plan-name { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 20px; }
+    .plan-card.standard .plan-name { color: #6e6e60; }
+    .plan-card.pro .plan-name { color: rgba(0,0,0,0.5); }
+    .plan-price { font-family: 'Fraunces', serif; font-size: 52px; font-weight: 600; letter-spacing: -2px; line-height: 1; margin-bottom: 4px; }
+    .plan-card.standard .plan-price { color: white; }
+    .plan-card.pro .plan-price { color: var(--ink); }
+    .plan-period { font-size: 12px; margin-bottom: 8px; }
+    .plan-card.standard .plan-period { color: #6e6e60; }
+    .plan-card.pro .plan-period { color: rgba(0,0,0,0.5); }
+    .plan-annual { font-size: 12px; padding: 5px 12px; border-radius: 6px; display: inline-block; margin-bottom: 28px; }
+    .plan-card.standard .plan-annual { background: rgba(200,240,96,0.1); color: var(--accent); }
+    .plan-card.pro .plan-annual { background: rgba(0,0,0,0.1); color: var(--ink); }
+    .plan-divider { height: 1px; margin-bottom: 24px; }
+    .plan-card.standard .plan-divider { background: #2e2e28; }
+    .plan-card.pro .plan-divider { background: rgba(0,0,0,0.12); }
+    .plan-features { list-style: none; display: flex; flex-direction: column; gap: 10px; margin-bottom: 32px; }
+    .plan-features li { font-size: 13px; display: flex; gap: 10px; }
+    .plan-card.standard .plan-features li { color: #a0a090; }
+    .plan-card.pro .plan-features li { color: var(--ink); }
+    .plan-check { flex-shrink: 0; }
+    .plan-card.standard .plan-check { color: var(--accent); }
+    .plan-card.pro .plan-check { color: rgba(0,0,0,0.4); }
+    .btn-plan {
+      width: 100%; padding: 14px; border: none; border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500;
+      cursor: pointer; letter-spacing: 0.5px; transition: opacity 0.15s, transform 0.15s;
+      text-align: center; text-decoration: none; display: block;
     }
-    .cliente-card:hover { border-color: var(--border2); }
-    .cliente-avatar {
-      width: 40px; height: 40px; border-radius: 10px;
-      background: var(--surface2); border: 1px solid var(--border);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px; flex-shrink: 0;
-    }
-    .cliente-info { flex: 1; min-width: 0; }
-    .cliente-nome { font-size: 14px; font-weight: 500; margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .cliente-nif { font-size: 11px; color: var(--text-muted); }
-    .cliente-stats { display: flex; gap: 16px; flex-shrink: 0; }
-    .cliente-stat { text-align: center; }
-    .cliente-stat-val { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: var(--text); line-height: 1; }
-    .cliente-stat-label { font-size: 10px; color: var(--text-dim); margin-top: 2px; }
-    .cliente-actions { display: flex; gap: 8px; flex-shrink: 0; }
-    .btn-copy {
-      padding: 7px 14px; background: var(--surface2);
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted);
-      cursor: pointer; transition: all 0.15s; white-space: nowrap;
-    }
-    .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
-    .btn-copy.copiado { border-color: var(--success); color: var(--success); }
-    .btn-remove {
-      padding: 7px 10px; background: none;
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      color: var(--text-dim); cursor: pointer; transition: all 0.15s; font-size: 12px;
-    }
-    .btn-remove:hover { border-color: var(--error); color: var(--error); }
+    .btn-plan:hover { opacity: 0.85; transform: translateY(-1px); }
+    .plan-card.standard .btn-plan { background: var(--accent); color: var(--ink); }
+    .plan-card.pro .btn-plan { background: var(--ink); color: var(--accent); }
 
-    .clientes-empty {
-      background: var(--surface); border: 1px dashed var(--border);
-      border-radius: var(--radius); padding: 48px;
-      text-align: center; color: var(--text-muted); font-size: 13px;
-    }
-    .clientes-empty-icon { font-size: 32px; margin-bottom: 12px; opacity: 0.4; }
+    /* CONTACT */
+    .contact-wrap { max-width: 640px; margin: 0 auto; padding: 100px 32px 0; }
+    .form-group { margin-bottom: 20px; }
+    .form-label { font-size: 11px; letter-spacing: 1px; color: var(--muted); display: block; margin-bottom: 8px; }
+    .form-input, .form-textarea { width: 100%; padding: 14px 16px; background: white; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-family: 'DM Mono', monospace; font-size: 13px; color: var(--ink); transition: border-color 0.2s; outline: none; }
+    .form-input:focus, .form-textarea:focus { border-color: var(--ink); }
+    .form-textarea { resize: vertical; min-height: 120px; }
+    .form-submit { width: 100%; padding: 16px; background: var(--ink); color: var(--accent); border: none; border-radius: var(--radius-sm); font-family: 'DM Mono', monospace; font-size: 13px; font-weight: 500; cursor: pointer; letter-spacing: 0.5px; transition: opacity 0.15s, transform 0.15s; }
+    .form-submit:hover { opacity: 0.85; transform: translateY(-1px); }
+    .form-success { display: none; text-align: center; padding: 48px; background: white; border-radius: var(--radius); border: 1px solid var(--border); }
+    .form-success-icon { font-size: 40px; margin-bottom: 16px; }
+    .form-success-title { font-family: 'Fraunces', serif; font-size: 24px; margin-bottom: 8px; }
+    .form-success-desc { font-size: 13px; color: var(--muted); }
 
-    /* ── MODAL ADICIONAR CLIENTE ── */
-    .modal-overlay {
-      position: fixed; inset: 0;
-      background: rgba(0,0,0,0.7); backdrop-filter: blur(4px);
-      z-index: 200; display: none; align-items: center; justify-content: center;
-      padding: 24px;
-    }
-    .modal-overlay.open { display: flex; animation: fadeIn 0.2s ease; }
-    .modal {
-      background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 32px;
-      width: 100%; max-width: 420px;
-    }
-    .modal-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600; margin-bottom: 24px; }
-    .form-group { margin-bottom: 16px; }
-    .form-label { font-size: 11px; color: var(--text-muted); letter-spacing: 0.5px; display: block; margin-bottom: 6px; }
-    .form-input {
-      width: 100%; padding: 11px 14px;
-      background: var(--surface2); border: 1.5px solid var(--border);
-      border-radius: var(--radius-sm);
-      font-family: 'DM Mono', monospace; font-size: 13px; color: var(--text);
-      outline: none; transition: border-color 0.2s;
-    }
-    .form-input:focus { border-color: var(--accent); }
-    .form-input::placeholder { color: var(--text-dim); }
-    .modal-actions { display: flex; gap: 8px; margin-top: 24px; }
-    .btn-modal-cancel {
-      flex: 1; padding: 12px;
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: var(--radius-sm); font-family: 'DM Mono', monospace;
-      font-size: 12px; color: var(--text-muted); cursor: pointer;
-      transition: border-color 0.2s;
-    }
-    .btn-modal-cancel:hover { border-color: var(--border2); }
-    .btn-modal-submit {
-      flex: 2; padding: 12px;
-      background: var(--accent); color: var(--bg);
-      border: none; border-radius: var(--radius-sm);
-      font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
-      cursor: pointer; transition: opacity 0.15s;
-    }
-    .btn-modal-submit:hover { opacity: 0.88; }
-    .btn-modal-submit:disabled { opacity: 0.4; cursor: not-allowed; }
-    .modal-erro { font-size: 12px; color: var(--error); margin-top: 12px; display: none; }
-    .modal-loading { font-size: 12px; color: var(--accent); margin-top: 12px; display: none; }
+    /* FOOTER */
+    .footer-wrap { max-width: 1100px; margin: 0 auto; padding: 40px 32px; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--border); margin-top: 80px; }
+    .footer-logo { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: var(--ink); text-decoration: none; }
+    .footer-logo span { color: var(--muted); font-weight: 300; font-style: italic; }
+    .footer-copy { font-size: 11px; color: var(--muted); }
+    .footer-links { display: flex; gap: 24px; }
+    .footer-links a { font-size: 11px; color: var(--muted); text-decoration: none; }
+    .footer-links a:hover { color: var(--ink); }
 
-    /* ── BOTÃO VERIFICAR ── */
-    .btn-verificar {
-      padding: 7px 14px; background: none;
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted);
-      cursor: pointer; transition: all 0.15s; white-space: nowrap;
-    }
-    .btn-verificar:hover { border-color: var(--warning); color: var(--warning); }
-
-    /* ── MODAL VERIFICAÇÃO ── */
-    #modal-verificacao .modal { max-width: 680px; max-height: 90vh; overflow-y: auto; }
-    .verif-upload-zone {
-      border: 2px dashed var(--border); border-radius: var(--radius);
-      padding: 32px; text-align: center; cursor: pointer;
-      transition: border-color 0.2s; margin-bottom: 16px;
-    }
-    .verif-upload-zone:hover { border-color: var(--accent); }
-    .verif-upload-zone.active { border-color: var(--accent); background: var(--accent-dim); }
-    .verif-upload-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.5; }
-    .verif-upload-label { font-size: 13px; color: var(--text-muted); }
-    .verif-upload-hint { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
-
-    .verif-resumo {
-      display: grid; grid-template-columns: repeat(3, 1fr);
-      gap: 8px; margin-bottom: 16px;
-    }
-    .verif-stat {
-      background: var(--surface2); border-radius: var(--radius-sm);
-      padding: 12px; text-align: center;
-    }
-    .verif-stat-val { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 600; line-height: 1; }
-    .verif-stat-val.total   { color: var(--text); }
-    .verif-stat-val.ok      { color: var(--success); }
-    .verif-stat-val.falta   { color: var(--error); }
-    .verif-stat-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; letter-spacing: 1px; }
-
-    .verif-section-title {
-      font-size: 11px; letter-spacing: 1.5px; color: var(--text-muted);
-      text-transform: uppercase; margin: 16px 0 8px;
-    }
-    .verif-lista { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-    .verif-item {
-      display: flex; align-items: center; gap: 10px;
-      background: var(--surface2); border-radius: var(--radius-sm);
-      padding: 10px 14px; font-size: 12px;
-    }
-    .verif-item-icon { font-size: 14px; flex-shrink: 0; }
-    .verif-item-nome { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-    .verif-item-data { color: var(--text-muted); flex-shrink: 0; font-size: 11px; }
-    .verif-item-total { color: var(--accent); flex-shrink: 0; font-size: 11px; min-width: 64px; text-align: right; }
-
-    .verif-email-preview {
-      background: var(--surface2); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 16px; font-size: 12px;
-      color: var(--text-muted); line-height: 1.7; white-space: pre-wrap;
-      max-height: 200px; overflow-y: auto; margin-bottom: 12px;
-      font-family: 'DM Mono', monospace;
-    }
-    .verif-email-preview strong { color: var(--text); }
-
-    .verif-actions { display: flex; gap: 8px; margin-top: 16px; }
-    .btn-enviar-email {
-      flex: 1; padding: 12px;
-      background: var(--accent); color: var(--bg);
-      border: none; border-radius: var(--radius-sm);
-      font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
-      cursor: pointer; transition: opacity 0.15s;
-    }
-    .btn-enviar-email:hover { opacity: 0.88; }
-    .btn-fechar-verif {
-      padding: 12px 20px; background: var(--surface2);
-      border: 1px solid var(--border); border-radius: var(--radius-sm);
-      font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted);
-      cursor: pointer; transition: border-color 0.2s;
-    }
-    .btn-fechar-verif:hover { border-color: var(--border2); }
-
-    /* ── SPINNER ── */
-    .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* ── LOADING FULL ── */
-    .loading-full { min-height: calc(100vh - 60px); display: flex; align-items: center; justify-content: center; gap: 12px; color: var(--text-muted); font-size: 13px; }
-
-    @media (max-width: 600px) {
+    /* RESPONSIVE */
+    @media (max-width: 720px) {
       nav { padding: 0 20px; }
-      .container { padding: 32px 20px; }
-      .stats-grid { grid-template-columns: 1fr; }
-      .cliente-stats { display: none; }
-      .login-card { padding: 28px 24px; }
-      .cliente-card { flex-wrap: wrap; }
+      .nav-links { display: none; }
+      .hero-wrap, .section-wrap, .contact-wrap { padding-left: 20px; padding-right: 20px; }
+      .steps-grid, .audience-grid, .pricing-grid { grid-template-columns: 1fr; }
+      .step-card:nth-child(2) { border-left: none; border-right: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+      .pricing-wrap { padding: 48px 24px; border-radius: 16px; }
+      .footer-wrap { flex-direction: column; gap: 16px; text-align: center; }
+      .footer-links { justify-content: center; }
     }
+
+    /* REVEAL */
+    .reveal { opacity: 0; transform: translateY(24px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
   </style>
 </head>
 <body>
 
 <nav>
   <a href="/" class="nav-logo">
-    <svg width="16" height="20" viewBox="0 0 19 24" fill="none">
+    <svg width="18" height="22" viewBox="0 0 19 24" fill="none">
       <rect x="1" y="1" width="17" height="22" rx="2" stroke="#c8f060" stroke-width="1.5"/>
       <polyline points="11,1 18,8" stroke="#c8f060" stroke-width="1.5"/>
       <rect x="3" y="11" width="4" height="4" rx="0.5" fill="#c8f060"/>
@@ -399,778 +262,243 @@
     </svg>
     fatura<span>scan</span>
   </a>
-  <div class="nav-right" id="nav-user-area" style="display:none;">
-    <div class="nav-user">
-      <img class="nav-user-foto" id="nav-foto" src="" alt="">
-      <span class="nav-user-nome" id="nav-nome"></span>
-    </div>
-    <button class="btn-logout" onclick="logout()">Sair</button>
+  <div class="nav-links">
+    <a href="#como-funciona">Como funciona</a>
+    <a href="#precos">Preços</a>
+    <a href="#contacto">Contacto</a>
+    <a href="/app/" class="nav-cta">Entrar na app →</a>
   </div>
 </nav>
 
-<!-- LOADING -->
-<div class="loading-full" id="screen-loading">
-  <div class="spinner"></div>
-  <span>A carregar...</span>
-</div>
-
-<!-- LOGIN -->
-<div id="screen-login" class="screen">
-  <div class="login-bg"></div>
-  <div class="login-logo">fatura<span>scan</span></div>
-  <div class="login-sub">Área reservada a contabilistas</div>
-  <div class="login-card">
-    <div class="login-title">Bem-vindo</div>
-    <div class="login-desc">Entra com a tua conta Google para aceder à gestão de clientes e faturas.</div>
-    <button class="btn-google" onclick="entrarComGoogle()">
-      <svg width="18" height="18" viewBox="0 0 18 18">
-        <path fill="#4285F4" d="M16.51 8H8.98v3h4.3c-.18 1-.74 1.48-1.6 2.04v2.01h2.6a7.8 7.8 0 002.38-5.88c0-.57-.05-.66-.15-1.18z"/>
-        <path fill="#34A853" d="M8.98 17c2.16 0 3.97-.72 5.3-1.94l-2.6-2a4.8 4.8 0 01-7.18-2.54H1.83v2.07A8 8 0 008.98 17z"/>
-        <path fill="#FBBC05" d="M4.5 10.52a4.8 4.8 0 010-3.04V5.41H1.83a8 8 0 000 7.18l2.67-2.07z"/>
-        <path fill="#EA4335" d="M8.98 4.18c1.17 0 2.23.4 3.06 1.2l2.3-2.3A8 8 0 001.83 5.4L4.5 7.49a4.77 4.77 0 014.48-3.31z"/>
-      </svg>
-      Entrar com Google
-    </button>
-    <div class="login-note">Ao entrar, autorizas o FaturaScan a criar pastas e guardar ficheiros no Google Drive que indicares.</div>
-  </div>
-</div>
-
-<!-- ONBOARDING -->
-<div id="screen-onboarding" class="screen">
-  <div class="container">
-    <div class="onboarding-header">
-      <div class="onboarding-badge">✦ &nbsp;Configuração inicial</div>
-      <div class="page-title">Configura o teu Drive</div>
-      <div class="page-sub">Escolhe a pasta do Google Drive onde ficará a pasta FaturaScan com as faturas dos teus clientes.</div>
+<!-- HERO -->
+<div class="hero-wrap">
+  <div class="hero">
+    <div class="hero-bg"></div>
+    <div class="hero-badge"><div class="badge-dot"></div>6 meses grátis para novos contabilistas</div>
+    <h1>As faturas dos teus clientes,<br><mark>sem esforço</mark></h1>
+    <p class="hero-sub">O cliente lê o QR code e tira uma foto. A fatura aparece directamente no teu Google Drive, organizada por cliente e mês. Sem apps para instalar, sem contas para criar.</p>
+    <div class="hero-actions">
+      <a href="#contacto" class="btn-primary">Experimentar grátis →</a>
+      <a href="#como-funciona" class="btn-secondary">Ver como funciona</a>
     </div>
-
-    <div class="steps-onboarding">
-      <!-- Passo 1 -->
-      <div class="step-onboarding done">
-        <div class="step-num-circle">✓</div>
-        <div class="step-content">
-          <div class="step-onboarding-title">Login com Google</div>
-          <div class="step-onboarding-desc">Conta autenticada com sucesso.</div>
+    <p class="hero-note"><strong>6 meses grátis</strong> · até 5 clientes · até 500 faturas por cliente</p>
+    <div class="hero-preview">
+      <div class="mock-phone">
+        <div class="mock-header">
+          <div class="mock-logo-text">fatura<span>scan</span></div>
+          <div class="mock-dots"><div class="mock-dot on"></div><div class="mock-dot on"></div><div class="mock-dot"></div></div>
         </div>
-      </div>
-
-      <!-- Passo 2 -->
-      <div class="step-onboarding" id="step-pasta">
-        <div class="step-num-circle">2</div>
-        <div class="step-content">
-          <div class="step-onboarding-title">Escolher pasta no Drive</div>
-          <div class="step-onboarding-desc">
-            Clica no botão abaixo para escolher a pasta onde o FaturaScan vai criar a sua pasta de trabalho.<br>
-            Será criada automaticamente uma pasta chamada <strong style="color:var(--accent)">FaturaScan</strong> dentro da pasta que escolheres.
-          </div>
-          <button class="btn-confirmar" id="btn-picker" onclick="abrirPicker()" style="width:auto;margin-top:4px;">
-            📁 &nbsp;Escolher pasta no Drive
-          </button>
-          <div class="step-feedback" id="pasta-feedback"></div>
+        <div class="mock-step">
+          <div class="mock-step-icon active">✓</div>
+          <div><div class="mock-step-label">QR code lido</div><div class="mock-step-sub">NIF · Data · Total</div><div class="mock-pill">✓ validado</div></div>
         </div>
-      </div>
-
-      <!-- Passo 3 -->
-      <div class="step-onboarding" id="step-clientes" style="opacity:0.4;">
-        <div class="step-num-circle">3</div>
-        <div class="step-content">
-          <div class="step-onboarding-title">Adicionar clientes</div>
-          <div class="step-onboarding-desc">Após configurar a pasta, poderás adicionar os teus clientes e gerar links personalizados.</div>
+        <div class="mock-step">
+          <div class="mock-step-icon active">📷</div>
+          <div><div class="mock-step-label">Fotografar fatura</div><div class="mock-step-sub">Toca para abrir a câmara</div></div>
+        </div>
+        <div class="mock-step" style="opacity:0.35">
+          <div class="mock-step-icon">✅</div>
+          <div><div class="mock-step-label">Guardada no Drive</div><div class="mock-step-sub">A aguardar...</div></div>
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- DASHBOARD -->
-<div id="screen-dashboard" class="screen">
-  <div class="container">
-    <div class="dashboard-header">
-      <div>
-        <div class="dashboard-title">Os teus clientes</div>
-        <div class="dashboard-sub" id="dashboard-pasta-nome"></div>
-      </div>
-      <button class="btn-add" onclick="abrirModalCliente()">
-        <span>+</span> Novo cliente
-      </button>
-    </div>
+<div class="divider"></div>
 
-    <!-- Stats -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <div class="stat-label">TOTAL CLIENTES</div>
-        <div class="stat-value" id="stat-clientes">—</div>
-        <div class="stat-sub">activos</div>
+<!-- COMO FUNCIONA -->
+<div class="section-wrap" id="como-funciona">
+  <div class="reveal">
+    <div class="section-label">Como funciona</div>
+    <h2 class="section-title">Três passos.<br><em>Menos de 30 segundos.</em></h2>
+    <p class="section-sub">O cliente não precisa de instalar nada. Recebe um link, abre no browser do telemóvel, e é tudo.</p>
+  </div>
+  <div class="steps-grid reveal">
+    <div class="step-card">
+      <div class="step-num">01</div>
+      <div class="step-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <rect x="2" y="2" width="8" height="8" rx="1" stroke="#c8f060" stroke-width="1.5"/>
+          <rect x="12" y="2" width="8" height="8" rx="1" stroke="#c8f060" stroke-width="1.5"/>
+          <rect x="2" y="12" width="8" height="8" rx="1" stroke="#c8f060" stroke-width="1.5"/>
+          <rect x="13" y="13" width="2" height="2" fill="#c8f060"/>
+          <rect x="17" y="13" width="2" height="2" fill="#c8f060"/>
+          <rect x="13" y="17" width="2" height="2" fill="#c8f060"/>
+          <rect x="17" y="17" width="2" height="2" fill="#c8f060"/>
+        </svg>
       </div>
-      <div class="stat-card">
-        <div class="stat-label">FATURAS PROCESSADAS</div>
-        <div class="stat-value" id="stat-faturas">—</div>
-        <div class="stat-sub">em breve</div>
-      </div>
+      <div class="step-title">Lê o QR code</div>
+      <p class="step-desc">O cliente aponta a câmara para o QR code da fatura. A app lê e valida os dados — NIF, data, total, ATCUD — em segundos.</p>
     </div>
+    <div class="step-card">
+      <div class="step-num">02</div>
+      <div class="step-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <rect x="2" y="4" width="18" height="14" rx="2" stroke="#c8f060" stroke-width="1.5"/>
+          <circle cx="11" cy="11" r="3" stroke="#c8f060" stroke-width="1.5"/>
+          <circle cx="11" cy="11" r="1" fill="#c8f060"/>
+        </svg>
+      </div>
+      <div class="step-title">Tira uma foto</div>
+      <p class="step-desc">Fotografa a fatura. A imagem é comprimida automaticamente. Para faturas com mais páginas, tira várias fotos seguidas.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">03</div>
+      <div class="step-icon">
+        <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
+          <path d="M4 12V17a1 1 0 001 1h12a1 1 0 001-1v-5" stroke="#c8f060" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M11 3v10M8 10l3 3 3-3" stroke="#c8f060" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="step-title">Aparece no teu Drive</div>
+      <p class="step-desc">A fatura fica guardada na pasta do cliente, organizada por ano e mês. Pronta para classificar no teu software de contabilidade.</p>
+    </div>
+  </div>
+</div>
 
-    <!-- Lista clientes -->
-    <div class="clientes-header">
-      <div class="clientes-label">Clientes</div>
+<div class="divider"></div>
+
+<!-- PARA QUEM -->
+<div class="section-wrap">
+  <div class="reveal">
+    <div class="section-label">Para quem</div>
+    <h2 class="section-title">Feito para contabilistas.<br><em>Fácil para os clientes.</em></h2>
+  </div>
+  <div class="audience-grid reveal">
+    <div class="audience-card dark">
+      <div class="audience-tag">Para o contabilista</div>
+      <div class="audience-title">Recebe tudo organizado, sem perseguir ninguém</div>
+      <ul class="audience-list">
+        <li><span class="check">✓</span>Faturas no Google Drive, por cliente e mês</li>
+        <li><span class="check">✓</span>Verificação automática de duplicados por ATCUD</li>
+        <li><span class="check">✓</span>Dados do QR code estruturados — NIF, data, total</li>
+        <li><span class="check">✓</span>Suporte a PDF e faturas sem QR code</li>
+        <li><span class="check">✓</span>Link personalizado por cliente, sem contas</li>
+        <li><span class="check">✓</span>Processamento nocturno automático</li>
+      </ul>
     </div>
-    <div class="clientes-list" id="clientes-list">
-      <div class="clientes-empty">
-        <div class="clientes-empty-icon">🏢</div>
-        A carregar clientes...
+    <div class="audience-card light">
+      <div class="audience-tag">Para o cliente</div>
+      <div class="audience-title">Sem apps. Sem contas. Menos de 30 segundos.</div>
+      <ul class="audience-list">
+        <li><span class="check">✓</span>Abre um link no telemóvel — nada para instalar</li>
+        <li><span class="check">✓</span>Lê o QR code e tira uma foto</li>
+        <li><span class="check">✓</span>Faturas com várias páginas? Fotografa página a página</li>
+        <li><span class="check">✓</span>Funciona em iOS e Android</li>
+        <li><span class="check">✓</span>Também aceita PDFs e faturas sem QR</li>
+        <li><span class="check">✓</span>Disponível em português e inglês</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- PREÇOS -->
+<div style="padding: 0 32px 100px;" id="precos">
+  <div class="pricing-wrap">
+    <div class="reveal">
+      <div class="section-label" style="color:#6e6e60;">Preços</div>
+      <h2 class="section-title" style="color:white;">Simples e transparente.<br><em style="color:#4e4e44;">Sem surpresas.</em></h2>
+      <div class="trial-badge">✦ &nbsp;6 meses grátis · até 5 clientes · até 500 faturas por cliente</div>
+    </div>
+    <div class="pricing-grid reveal">
+      <div class="plan-card standard">
+        <div class="plan-name">Essencial</div>
+        <div class="plan-price">4,99€</div>
+        <div class="plan-period">por mês</div>
+        <div class="plan-annual">ou 49,90€/ano — poupa 2 meses</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="plan-check">✓</span>Clientes ilimitados</li>
+          <li><span class="plan-check">✓</span>Até 1.000 faturas/ano por cliente</li>
+          <li><span class="plan-check">✓</span>Google Drive organizado automaticamente</li>
+          <li><span class="plan-check">✓</span>Leitura QR com 3 níveis de fallback</li>
+          <li><span class="plan-check">✓</span>Suporte a PDF e faturas sem QR</li>
+          <li><span class="plan-check">✓</span>Fotos multi-página</li>
+        </ul>
+        <a href="#contacto" class="btn-plan">Começar grátis →</a>
+      </div>
+      <div class="plan-card pro">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">9,99€</div>
+        <div class="plan-period">por mês</div>
+        <div class="plan-annual">ou 99,90€/ano — poupa 2 meses</div>
+        <div class="plan-divider"></div>
+        <ul class="plan-features">
+          <li><span class="plan-check">✓</span>Tudo do Essencial</li>
+          <li><span class="plan-check">✓</span>Até 5.000 faturas/ano por cliente</li>
+          <li><span class="plan-check">✓</span>Para escritórios de maior volume</li>
+          <li><span class="plan-check">✓</span>Suporte prioritário</li>
+        </ul>
+        <a href="#contacto" class="btn-plan">Falar connosco →</a>
       </div>
     </div>
   </div>
 </div>
 
-<!-- MODAL ADICIONAR CLIENTE -->
-<div class="modal-overlay" id="modal-cliente">
-  <div class="modal">
-    <div class="modal-title">Novo cliente</div>
+<!-- CONTACTO -->
+<div class="contact-wrap" id="contacto">
+  <div class="reveal" style="text-align:center;margin-bottom:56px;">
+    <div class="section-label">Contacto</div>
+    <h2 class="section-title">Queres experimentar?<br><em>Fala connosco.</em></h2>
+    <p class="section-sub" style="margin:0 auto;">Entra em contacto e configuramos tudo em menos de um dia.</p>
+  </div>
+  <div id="contact-form" class="reveal">
     <div class="form-group">
-      <label class="form-label">NIF da empresa *</label>
-      <input type="text" class="form-input" id="m-nif" placeholder="ex: 518668193" maxlength="9">
+      <label class="form-label">Nome</label>
+      <input type="text" class="form-input" id="f-nome" placeholder="O teu nome">
     </div>
     <div class="form-group">
-      <label class="form-label">Nome da empresa *</label>
-      <input type="text" class="form-input" id="m-nome" placeholder="ex: Empresa, Lda">
+      <label class="form-label">Email</label>
+      <input type="email" class="form-input" id="f-email" placeholder="o.teu@email.pt">
     </div>
     <div class="form-group">
-      <label class="form-label">Email (opcional)</label>
-      <input type="email" class="form-input" id="m-email" placeholder="ex: faturas@empresa.pt">
+      <label class="form-label">Número de clientes (aproximado)</label>
+      <input type="text" class="form-input" id="f-clientes" placeholder="ex: 20">
     </div>
-    <div class="modal-erro" id="modal-erro"></div>
-    <div class="modal-loading" id="modal-loading">⏳ A criar cliente...</div>
-    <div class="modal-actions">
-      <button class="btn-modal-cancel" onclick="fecharModalCliente()">Cancelar</button>
-      <button class="btn-modal-submit" id="btn-modal-submit" onclick="criarCliente()">Adicionar cliente →</button>
+    <div class="form-group">
+      <label class="form-label">Mensagem</label>
+      <textarea class="form-textarea" id="f-msg" placeholder="Conta-nos um pouco sobre o teu escritório..."></textarea>
     </div>
+    <button class="form-submit" onclick="enviarForm()">Enviar mensagem →</button>
+  </div>
+  <div class="form-success" id="form-success">
+    <div class="form-success-icon">✅</div>
+    <div class="form-success-title">Mensagem enviada!</div>
+    <p class="form-success-desc">Entraremos em contacto em breve.</p>
+  </div>
+</div>
+
+<div class="footer-wrap">
+  <a href="/" class="footer-logo">fatura<span>scan</span></a>
+  <div class="footer-copy">© 2026 Formigaplicada</div>
+  <div class="footer-links">
+    <a href="#como-funciona">Como funciona</a>
+    <a href="#precos">Preços</a>
+    <a href="/app/">App</a>
+    <a href="/privacidade/">Privacidade</a>
+    <a href="/termos/">Termos</a>
   </div>
 </div>
 
 <script>
-const BACKEND = 'https://faturascan-backend-336523636761.europe-west1.run.app';
-
-// ── ESTADO ───────────────────────────────────────────────────
-let session_token    = null;
-let contabilista     = null;
-let clientes         = [];
-
-// ── INIT ─────────────────────────────────────────────────────
-(async function init() {
-  // Ver se veio session no URL (após callback OAuth)
-  const params = new URLSearchParams(window.location.search);
-  const session_url = params.get('session');
-  const erro_url    = params.get('erro');
-
-  if (session_url) {
-    localStorage.setItem('fs_session', session_url);
-    // Limpar URL
-    window.history.replaceState({}, '', '/conta');
-  }
-
-  if (erro_url) {
-    mostrarScreen('login');
-    return;
-  }
-
-  session_token = localStorage.getItem('fs_session');
-
-  if (!session_token) {
-    mostrarScreen('login');
-    return;
-  }
-
-  // Tentar carregar dados do contabilista
-  try {
-    const dados = await apiGet('/auth/me');
-    contabilista = dados;
-    mostrarNavUser(dados);
-
-    if (!dados.onboarding_completo) {
-      mostrarScreen('onboarding');
-    } else {
-      mostrarScreen('dashboard');
-      await carregarDashboard();
-    }
-  } catch (err) {
-    // Sessão inválida
-    localStorage.removeItem('fs_session');
-    mostrarScreen('login');
-  }
-})();
-
-// ── NAVEGAÇÃO ─────────────────────────────────────────────────
-function mostrarScreen(nome) {
-  document.getElementById('screen-loading').style.display = 'none';
-  ['login', 'onboarding', 'dashboard'].forEach(s => {
-    document.getElementById('screen-' + s).classList.remove('active');
-  });
-  document.getElementById('screen-' + nome).classList.add('active');
-}
-
-function mostrarNavUser(dados) {
-  document.getElementById('nav-user-area').style.display = 'flex';
-  document.getElementById('nav-nome').textContent = dados.nome || dados.email;
-  if (dados.foto) {
-    document.getElementById('nav-foto').src = dados.foto;
-  } else {
-    document.getElementById('nav-foto').style.display = 'none';
-  }
-}
-
-// ── AUTH ─────────────────────────────────────────────────────
-function entrarComGoogle() {
-  window.location.href = BACKEND + '/auth/login';
-}
-
-async function logout() {
-  try {
-    await apiPost('/auth/logout', {});
-  } catch(e) {}
-  localStorage.removeItem('fs_session');
-  window.location.href = '/conta';
-}
-
-// ── ONBOARDING ───────────────────────────────────────────────
-const PICKER_API_KEY = 'AIzaSyDr71wDPvdUpCNYTu1-x74g59E-_nqMSeY';
-let pickerApiLoaded  = false;
-let oauthAccessToken = null;
-
-function abrirPicker() {
-  const btn      = document.getElementById('btn-picker');
-  const feedback = document.getElementById('pasta-feedback');
-  btn.disabled   = true;
-  feedback.textContent = '';
-
-  apiGet('/auth/token').then(res => {
-    oauthAccessToken = res.access_token;
-    if (pickerApiLoaded) {
-      mostrarPicker();
-    } else {
-      gapi.load('picker', () => {
-        pickerApiLoaded = true;
-        mostrarPicker();
-      });
-    }
-  }).catch(err => {
-    feedback.textContent = 'Erro ao obter token: ' + err.message;
-    feedback.className   = 'step-feedback erro';
-    btn.disabled = false;
-  });
-}
-
-function mostrarPicker() {
-  const view = new google.picker.DocsView(google.picker.ViewId.FOLDERS)
-    .setSelectFolderEnabled(true)
-    .setMimeTypes('application/vnd.google-apps.folder');
-
-  const picker = new google.picker.PickerBuilder()
-    .addView(view)
-    .setOAuthToken(oauthAccessToken)
-    .setDeveloperKey(PICKER_API_KEY)
-    .setCallback(onPastaEscolhida)
-    .setTitle('Escolhe a pasta onde criar a pasta FaturaScan')
-    .build();
-
-  picker.setVisible(true);
-}
-
-async function onPastaEscolhida(data) {
-  const feedback = document.getElementById('pasta-feedback');
-  const btn      = document.getElementById('btn-picker');
-
-  if (data.action !== google.picker.Action.PICKED) {
-    btn.disabled = false;
-    return;
-  }
-
-  const pasta = data.docs[0];
-  feedback.textContent = 'A criar pasta FaturaScan...';
-  feedback.className   = 'step-feedback';
-
-  try {
-    const res = await apiPost('/onboarding/pasta', {
-      pasta_pai_id:   pasta.id,
-      pasta_pai_nome: pasta.name,
-    });
-
-    feedback.textContent = 'Pasta ' + res.pasta.nome + ' criada com sucesso!';
-    feedback.className   = 'step-feedback ok';
-
-    document.getElementById('step-pasta').classList.add('done');
-    document.getElementById('step-pasta').querySelector('.step-num-circle').textContent = 'ok';
-    document.getElementById('step-clientes').style.opacity = '1';
-
-    setTimeout(async () => {
-      contabilista = await apiGet('/auth/me');
-      mostrarScreen('dashboard');
-      await carregarDashboard();
-    }, 1500);
-
-  } catch (err) {
-    feedback.textContent = err.message || 'Erro ao criar pasta.';
-    feedback.className   = 'step-feedback erro';
-    btn.disabled = false;
-  }
-}
-
-// ── DASHBOARD ────────────────────────────────────────────────
-async function carregarDashboard() {
-  if (contabilista?.pasta_drive_nome) {
-    document.getElementById('dashboard-pasta-nome').textContent = '📁 ' + contabilista.pasta_drive_nome;
-  }
-
-  try {
-    const res = await apiGet('/clientes');
-    clientes  = res.clientes || [];
-    renderClientes();
-    document.getElementById('stat-clientes').textContent = clientes.length;
-  } catch (err) {
-    console.error('Erro ao carregar clientes:', err);
-  }
-}
-
-function renderClientes() {
-  const list = document.getElementById('clientes-list');
-
-  if (!clientes.length) {
-    list.innerHTML = `
-      <div class="clientes-empty">
-        <div class="clientes-empty-icon">🏢</div>
-        Ainda não tens clientes.<br>Clica em "Novo cliente" para começar.
-      </div>`;
-    return;
-  }
-
-  list.innerHTML = clientes.map(c => `
-    <div class="cliente-card" id="cliente-${c.token}">
-      <div class="cliente-avatar">🏢</div>
-      <div class="cliente-info">
-        <div class="cliente-nome">${c.nome}</div>
-        <div class="cliente-nif">NIF ${c.nif}</div>
-      </div>
-      <div class="cliente-stats">
-        <div class="cliente-stat">
-          <div class="cliente-stat-val">—</div>
-          <div class="cliente-stat-label">total</div>
-        </div>
-        <div class="cliente-stat">
-          <div class="cliente-stat-val">—</div>
-          <div class="cliente-stat-label">mês</div>
-        </div>
-      </div>
-      <div class="cliente-actions">
-        <button class="btn-verificar" onclick="abrirVerificacao('${c.token}', '${encodeURIComponent(c.nome)}', '${encodeURIComponent(c.email || '')}')">
-          Verificar
-        </button>
-        <button class="btn-copy" onclick="copiarLink('${c.token}', '${encodeURIComponent(c.link)}', this)">
-          Copiar link
-        </button>
-        <button class="btn-remove" onclick="removerCliente('${c.token}')" title="Remover cliente">✕</button>
-      </div>
-    </div>
-  `).join('');
-}
-
-function copiarLink(token, link_encoded, btn) {
-  const link = decodeURIComponent(link_encoded);
-  navigator.clipboard.writeText(link).then(() => {
-    btn.textContent = '✓ Copiado!';
-    btn.classList.add('copiado');
-    setTimeout(() => {
-      btn.textContent = 'Copiar link';
-      btn.classList.remove('copiado');
-    }, 2000);
-  });
-}
-
-async function removerCliente(token) {
-  if (!confirm('Tens a certeza que queres remover este cliente? A pasta no Drive não será apagada.')) return;
-  try {
-    await apiDelete('/clientes/' + token);
-    clientes = clientes.filter(c => c.token !== token);
-    renderClientes();
-    document.getElementById('stat-clientes').textContent = clientes.length;
-  } catch (err) {
-    alert('Erro ao remover cliente: ' + err.message);
-  }
-}
-
-// ── MODAL CLIENTE ────────────────────────────────────────────
-function abrirModalCliente() {
-  document.getElementById('modal-cliente').classList.add('open');
-  document.getElementById('m-nif').focus();
-  document.getElementById('modal-erro').style.display = 'none';
-  document.getElementById('modal-loading').style.display = 'none';
-  document.getElementById('m-nif').value   = '';
-  document.getElementById('m-nome').value  = '';
-  document.getElementById('m-email').value = '';
-}
-
-function fecharModalCliente() {
-  document.getElementById('modal-cliente').classList.remove('open');
-}
-
-async function criarCliente() {
-  const nif   = document.getElementById('m-nif').value.trim();
-  const nome  = document.getElementById('m-nome').value.trim();
-  const email = document.getElementById('m-email').value.trim();
-  const erro  = document.getElementById('modal-erro');
-  const load  = document.getElementById('modal-loading');
-  const btn   = document.getElementById('btn-modal-submit');
-
-  erro.style.display = 'none';
-
-  if (!nif || !/^\d{9}$/.test(nif)) {
-    erro.textContent = 'NIF inválido — deve ter 9 dígitos.';
-    erro.style.display = 'block'; return;
-  }
-  if (!nome) {
-    erro.textContent = 'Nome obrigatório.';
-    erro.style.display = 'block'; return;
-  }
-
-  btn.disabled = true;
-  load.style.display = 'block';
-
-  try {
-    const res = await apiPost('/clientes', { nif, nome, email });
-    clientes.unshift(res.cliente);
-    renderClientes();
-    document.getElementById('stat-clientes').textContent = clientes.length;
-    fecharModalCliente();
-  } catch (err) {
-    erro.textContent = err.message || 'Erro ao criar cliente.';
-    erro.style.display = 'block';
-    btn.disabled = false;
-    load.style.display = 'none';
-  }
-}
-
-// Fechar modal ao clicar fora
-document.getElementById('modal-cliente').addEventListener('click', function(e) {
-  if (e.target === this) fecharModalCliente();
-});
-
-// ── VERIFICAÇÃO DE FATURAS ────────────────────────────────────
-let verif_cliente_token = null;
-let verif_cliente_nome  = null;
-let verif_cliente_email = null;
-let verif_falta_dados   = [];
-
-function abrirVerificacao(token, nome_enc, email_enc) {
-  verif_cliente_token = token;
-  verif_cliente_nome  = decodeURIComponent(nome_enc);
-  verif_cliente_email = decodeURIComponent(email_enc);
-
-  document.getElementById('verif-titulo').textContent = 'Verificar faturas — ' + verif_cliente_nome;
-
-  // Definir mês anterior como default
-  const hoje = new Date();
-  hoje.setMonth(hoje.getMonth() - 1);
-  const mes_default = hoje.toISOString().slice(0, 7);
-  document.getElementById('verif-mes').value = mes_default;
-
-  // Reset
-  document.getElementById('verif-resultados').style.display = 'none';
-  document.getElementById('btn-enviar-email').style.display = 'none';
-  document.getElementById('verif-email-wrap').style.display = 'none';
-  document.getElementById('verif-drop-zone').classList.remove('active');
-  document.getElementById('verif-csv-input').value = '';
-  verif_falta_dados = [];
-
-  document.getElementById('modal-verificacao').classList.add('open');
-}
-
-function fecharVerificacao() {
-  document.getElementById('modal-verificacao').classList.remove('open');
-}
-
-document.addEventListener('DOMContentLoaded', function() {
-  const modalVerif = document.getElementById('modal-verificacao');
-  if (modalVerif) {
-    modalVerif.addEventListener('click', function(e) {
-      if (e.target === this) fecharVerificacao();
-    });
-  }
-  const csvInput = document.getElementById('verif-csv-input');
-  if (csvInput) {
-    csvInput.addEventListener('change', function(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-      document.getElementById('verif-drop-zone').classList.add('active');
-      processarCSVeFatura(file);
-    });
-  }
-});
-
-async function processarCSVeFatura(file) {
-  const texto = await lerFicheiroTexto(file);
-  const linhas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
-
-  if (linhas.length < 2) {
-    alert('Ficheiro CSV inválido ou vazio.');
-    return;
-  }
-
-  // Parse CSV com separador ;
-  const header = linhas[0].split(';').map(h => h.replace(/"/g, '').trim());
-  const idxAtcudNr  = header.findIndex(h => h.includes('Fatura') && h.includes('ATCUD'));
-  const idxEmitente = header.findIndex(h => h === 'Emitente');
-  const idxData     = header.findIndex(h => h.includes('Data'));
-  const idxTotal    = header.findIndex(h => h === 'Total');
-
-  if (idxAtcudNr < 0 || idxEmitente < 0) {
-    alert('Formato do CSV não reconhecido. Certifica-te que exportaste do portal e-Fatura.');
-    return;
-  }
-
-  const faturas_efatura = [];
-  for (let i = 1; i < linhas.length; i++) {
-    const cols = parsearLinhaCSV(linhas[i]);
-    if (!cols || cols.length < 3) continue;
-
-    const nr_atcud = (cols[idxAtcudNr] || '').trim();
-    const partes   = nr_atcud.split(' / ');
-    const atcud    = partes.length === 2 ? partes[1].trim() : null;
-    if (!atcud) continue;
-
-    const emitente = (cols[idxEmitente] || '').trim();
-    const partes_e = emitente.split(' - ', 2);
-    const nome_em  = partes_e.length === 2 ? partes_e[1].trim() : emitente;
-
-    faturas_efatura.push({
-      atcud,
-      nome:  nome_em,
-      data:  idxData  >= 0 ? (cols[idxData]  || '').trim() : '',
-      total: idxTotal >= 0 ? (cols[idxTotal] || '').trim() : '',
-    });
-  }
-
-  if (!faturas_efatura.length) {
-    alert('Nenhuma fatura encontrada no CSV.');
-    return;
-  }
-
-  // Ir buscar ATCUDs registados no Firestore para este cliente
-  const mes = document.getElementById('verif-mes').value; // YYYY-MM
-  await reconciliarFaturas(faturas_efatura, mes);
-}
-
-async function reconciliarFaturas(faturas_efatura, mes) {
-  let atcuds_registados = new Set();
-
-  try {
-    const res = await apiGet('/faturas/' + verif_cliente_token + '?mes=' + mes);
-    (res.faturas || []).forEach(f => atcuds_registados.add(f.atcud));
-  } catch(e) {
-    // endpoint ainda não existe — por agora trata tudo como em falta
-    console.warn('Endpoint /faturas não disponível:', e.message);
-  }
-
-  const entregues = faturas_efatura.filter(f => atcuds_registados.has(f.atcud));
-  const em_falta  = faturas_efatura.filter(f => !atcuds_registados.has(f.atcud));
-
-  verif_falta_dados = em_falta;
-
-  // Actualizar UI
-  document.getElementById('verif-total').textContent = faturas_efatura.length;
-  document.getElementById('verif-ok').textContent    = entregues.length;
-  document.getElementById('verif-falta').textContent = em_falta.length;
-
-  // Listas
-  renderVerifLista('verif-lista-ok', entregues, '✓');
-  renderVerifLista('verif-lista-falta', em_falta, '✗');
-
-  document.getElementById('verif-entregues-wrap').style.display = entregues.length ? 'block' : 'none';
-  document.getElementById('verif-falta-wrap').style.display     = em_falta.length  ? 'block' : 'none';
-  document.getElementById('verif-resultados').style.display     = 'block';
-
-  if (em_falta.length > 0) {
-    gerarPreviewEmail(em_falta, mes);
-    document.getElementById('verif-email-wrap').style.display   = 'block';
-    document.getElementById('btn-enviar-email').style.display   = 'block';
-  }
-}
-
-function renderVerifLista(id, faturas, icone) {
-  const el = document.getElementById(id);
-  if (!faturas.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text-dim);padding:8px 0;">Nenhuma</div>'; return; }
-  el.innerHTML = faturas.map(f => `
-    <div class="verif-item">
-      <span class="verif-item-icon">${icone}</span>
-      <span class="verif-item-nome">${f.nome}</span>
-      <span class="verif-item-data">${formatarDataISO(f.data)}</span>
-      <span class="verif-item-total">${f.total}</span>
-    </div>
-  `).join('');
-}
-
-function gerarPreviewEmail(em_falta, mes) {
-  const [ano, m] = mes.split('-');
-  const meses_pt = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const mes_nome = meses_pt[parseInt(m) - 1] + ' de ' + ano;
-
-  const lista = em_falta.map((f, i) =>
-    `   ${i+1}. ${f.nome}\n      Data: ${formatarDataISO(f.data)}    Valor: ${f.total}`
-  ).join('\n');
-
-  const empresa_contabilista = contabilista?.nome || 'O seu Contabilista';
-
-  const email = `Assunto: Faturas em falta — ${mes_nome}
-
-Exmo(a). Sr(a),
-
-Vimos por este meio solicitar o envio das seguintes faturas referentes ao mês de ${mes_nome}, as quais ainda não foram entregues para efeitos de contabilização:
-
-${lista}
-
-Solicita-se que proceda ao envio das referidas faturas através do link FaturaScan, o mais brevemente possível.
-
-Para qualquer esclarecimento, não hesite em contactar-nos.
-
-Com os melhores cumprimentos,
-${empresa_contabilista}`;
-
-  document.getElementById('verif-email-preview').textContent = email;
-  return email;
-}
-
-function enviarEmailFaturasFalta() {
-  const mes      = document.getElementById('verif-mes').value;
-  const email_cl = verif_cliente_email;
-  const texto    = document.getElementById('verif-email-preview').textContent;
-  const linhas   = texto.split('\n');
-  const assunto  = linhas[0].replace('Assunto: ', '').trim();
-  const corpo    = linhas.slice(2).join('\n').trim();
-
-  const mailto = `mailto:${email_cl}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
-  window.location.href = mailto;
-}
-
-// ── UTILS VERIFICAÇÃO ────────────────────────────────────────
-function lerFicheiroTexto(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = e => resolve(e.target.result);
-    reader.onerror = reject;
-    reader.readAsText(file, 'UTF-8');
-  });
-}
-
-function parsearLinhaCSV(linha) {
-  const cols = [];
-  let atual = '';
-  let dentro_aspas = false;
-  for (let i = 0; i < linha.length; i++) {
-    const c = linha[i];
-    if (c === '"') { dentro_aspas = !dentro_aspas; }
-    else if (c === ';' && !dentro_aspas) { cols.push(atual); atual = ''; }
-    else { atual += c; }
-  }
-  cols.push(atual);
-  return cols;
-}
-
-function formatarDataISO(data) {
-  if (!data || data.length < 10) return data || '—';
-  const [ano, mes, dia] = data.slice(0, 10).split('-');
-  return `${dia}/${mes}/${ano}`;
-}
-async function apiGet(path) {
-  const res = await fetch(BACKEND + path, {
-    headers: { 'Authorization': 'Bearer ' + session_token }
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.erro || 'Erro ' + res.status);
-  return json;
-}
-
-async function apiPost(path, body) {
-  const res = await fetch(BACKEND + path, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + session_token },
-    body:    JSON.stringify(body),
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.erro || 'Erro ' + res.status);
-  return json;
-}
-
-async function apiDelete(path) {
-  const res = await fetch(BACKEND + path, {
-    method:  'DELETE',
-    headers: { 'Authorization': 'Bearer ' + session_token }
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.erro || 'Erro ' + res.status);
-  return json;
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('visible'); });
+}, { threshold: 0.1 });
+document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+function enviarForm() {
+  const nome     = document.getElementById('f-nome').value.trim();
+  const email    = document.getElementById('f-email').value.trim();
+  const clientes = document.getElementById('f-clientes').value.trim();
+  const msg      = document.getElementById('f-msg').value.trim();
+  if (!nome || !email) { alert('Por favor preenche o nome e o email.'); return; }
+  const body    = encodeURIComponent(`Nome: ${nome}\nEmail: ${email}\nClientes: ${clientes}\n\n${msg}`);
+  const subject = encodeURIComponent(`FaturaScan — contacto de ${nome}`);
+  window.location.href = `mailto:formigaplicada@gmail.com?subject=${subject}&body=${body}`;
+  document.getElementById('contact-form').style.display = 'none';
+  document.getElementById('form-success').style.display = 'block';
 }
 </script>
-<!-- MODAL VERIFICAÇÃO DE FATURAS -->
-<div class="modal-overlay" id="modal-verificacao">
-  <div class="modal" style="max-width:680px;">
-    <div class="modal-title" id="verif-titulo">Verificar faturas</div>
-    <div class="form-label" style="margin-bottom:8px;">Mês de referência</div>
-    <input type="month" class="form-input" id="verif-mes" style="margin-bottom:16px;">
-
-    <!-- Upload CSV -->
-    <div id="verif-upload-area">
-      <div class="verif-upload-zone" id="verif-drop-zone" onclick="document.getElementById('verif-csv-input').click()">
-        <div class="verif-upload-icon">📄</div>
-        <div class="verif-upload-label">Carrega o CSV do e-Fatura</div>
-        <div class="verif-upload-hint">Exporta em faturas.portaldasfinancas.gov.pt → Adquirente → Exportar</div>
-      </div>
-      <input type="file" id="verif-csv-input" accept=".csv" style="display:none">
-    </div>
-
-    <!-- Resultados (aparece após upload) -->
-    <div id="verif-resultados" style="display:none;">
-      <div class="verif-resumo">
-        <div class="verif-stat">
-          <div class="verif-stat-val total" id="verif-total">0</div>
-          <div class="verif-stat-label">NO E-FATURA</div>
-        </div>
-        <div class="verif-stat">
-          <div class="verif-stat-val ok" id="verif-ok">0</div>
-          <div class="verif-stat-label">ENTREGUES</div>
-        </div>
-        <div class="verif-stat">
-          <div class="verif-stat-val falta" id="verif-falta">0</div>
-          <div class="verif-stat-label">EM FALTA</div>
-        </div>
-      </div>
-
-      <div id="verif-entregues-wrap">
-        <div class="verif-section-title">✓ Entregues</div>
-        <div class="verif-lista" id="verif-lista-ok"></div>
-      </div>
-
-      <div id="verif-falta-wrap">
-        <div class="verif-section-title">✗ Em falta</div>
-        <div class="verif-lista" id="verif-lista-falta"></div>
-      </div>
-
-      <!-- Preview email -->
-      <div id="verif-email-wrap" style="display:none;">
-        <div class="verif-section-title">Email gerado</div>
-        <div class="verif-email-preview" id="verif-email-preview"></div>
-        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">
-          O email abrirá no teu cliente de email com os dados preenchidos.
-        </div>
-      </div>
-    </div>
-
-    <div class="verif-actions">
-      <button class="btn-fechar-verif" onclick="fecharVerificacao()">Fechar</button>
-      <button class="btn-enviar-email" id="btn-enviar-email" style="display:none;" onclick="enviarEmailFaturasFalta()">
-        ✉ Enviar email ao cliente
-      </button>
-    </div>
-  </div>
-</div>
-
-<script src="https://apis.google.com/js/api.js"></script>
-<script src="https://accounts.google.com/gsi/client"></script>
 </body>
 </html>

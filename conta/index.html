@@ -288,6 +288,83 @@
     .modal-erro { font-size: 12px; color: var(--error); margin-top: 12px; display: none; }
     .modal-loading { font-size: 12px; color: var(--accent); margin-top: 12px; display: none; }
 
+    /* ── BOTÃO VERIFICAR ── */
+    .btn-verificar {
+      padding: 7px 14px; background: none;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 11px; color: var(--text-muted);
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+    }
+    .btn-verificar:hover { border-color: var(--warning); color: var(--warning); }
+
+    /* ── MODAL VERIFICAÇÃO ── */
+    #modal-verificacao .modal { max-width: 680px; max-height: 90vh; overflow-y: auto; }
+    .verif-upload-zone {
+      border: 2px dashed var(--border); border-radius: var(--radius);
+      padding: 32px; text-align: center; cursor: pointer;
+      transition: border-color 0.2s; margin-bottom: 16px;
+    }
+    .verif-upload-zone:hover { border-color: var(--accent); }
+    .verif-upload-zone.active { border-color: var(--accent); background: var(--accent-dim); }
+    .verif-upload-icon { font-size: 28px; margin-bottom: 8px; opacity: 0.5; }
+    .verif-upload-label { font-size: 13px; color: var(--text-muted); }
+    .verif-upload-hint { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+
+    .verif-resumo {
+      display: grid; grid-template-columns: repeat(3, 1fr);
+      gap: 8px; margin-bottom: 16px;
+    }
+    .verif-stat {
+      background: var(--surface2); border-radius: var(--radius-sm);
+      padding: 12px; text-align: center;
+    }
+    .verif-stat-val { font-family: 'Fraunces', serif; font-size: 28px; font-weight: 600; line-height: 1; }
+    .verif-stat-val.total   { color: var(--text); }
+    .verif-stat-val.ok      { color: var(--success); }
+    .verif-stat-val.falta   { color: var(--error); }
+    .verif-stat-label { font-size: 10px; color: var(--text-dim); margin-top: 4px; letter-spacing: 1px; }
+
+    .verif-section-title {
+      font-size: 11px; letter-spacing: 1.5px; color: var(--text-muted);
+      text-transform: uppercase; margin: 16px 0 8px;
+    }
+    .verif-lista { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .verif-item {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--surface2); border-radius: var(--radius-sm);
+      padding: 10px 14px; font-size: 12px;
+    }
+    .verif-item-icon { font-size: 14px; flex-shrink: 0; }
+    .verif-item-nome { flex: 1; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .verif-item-data { color: var(--text-muted); flex-shrink: 0; font-size: 11px; }
+    .verif-item-total { color: var(--accent); flex-shrink: 0; font-size: 11px; min-width: 64px; text-align: right; }
+
+    .verif-email-preview {
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 16px; font-size: 12px;
+      color: var(--text-muted); line-height: 1.7; white-space: pre-wrap;
+      max-height: 200px; overflow-y: auto; margin-bottom: 12px;
+      font-family: 'DM Mono', monospace;
+    }
+    .verif-email-preview strong { color: var(--text); }
+
+    .verif-actions { display: flex; gap: 8px; margin-top: 16px; }
+    .btn-enviar-email {
+      flex: 1; padding: 12px;
+      background: var(--accent); color: var(--bg);
+      border: none; border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 12px; font-weight: 500;
+      cursor: pointer; transition: opacity 0.15s;
+    }
+    .btn-enviar-email:hover { opacity: 0.88; }
+    .btn-fechar-verif {
+      padding: 12px 20px; background: var(--surface2);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted);
+      cursor: pointer; transition: border-color 0.2s;
+    }
+    .btn-fechar-verif:hover { border-color: var(--border2); }
+
     /* ── SPINNER ── */
     .spinner { width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
     @keyframes spin { to { transform: rotate(360deg); } }
@@ -683,6 +760,9 @@ function renderClientes() {
         </div>
       </div>
       <div class="cliente-actions">
+        <button class="btn-verificar" onclick="abrirVerificacao('${c.token}', '${encodeURIComponent(c.nome)}', '${encodeURIComponent(c.email || '')}')">
+          Verificar
+        </button>
         <button class="btn-copy" onclick="copiarLink('${c.token}', '${encodeURIComponent(c.link)}', this)">
           Copiar link
         </button>
@@ -772,7 +852,231 @@ document.getElementById('modal-cliente').addEventListener('click', function(e) {
   if (e.target === this) fecharModalCliente();
 });
 
-// ── API HELPERS ──────────────────────────────────────────────
+// ── VERIFICAÇÃO DE FATURAS ────────────────────────────────────
+let verif_cliente_token = null;
+let verif_cliente_nome  = null;
+let verif_cliente_email = null;
+let verif_falta_dados   = [];
+
+function abrirVerificacao(token, nome_enc, email_enc) {
+  verif_cliente_token = token;
+  verif_cliente_nome  = decodeURIComponent(nome_enc);
+  verif_cliente_email = decodeURIComponent(email_enc);
+
+  document.getElementById('verif-titulo').textContent = 'Verificar faturas — ' + verif_cliente_nome;
+
+  // Definir mês anterior como default
+  const hoje = new Date();
+  hoje.setMonth(hoje.getMonth() - 1);
+  const mes_default = hoje.toISOString().slice(0, 7);
+  document.getElementById('verif-mes').value = mes_default;
+
+  // Reset
+  document.getElementById('verif-resultados').style.display = 'none';
+  document.getElementById('btn-enviar-email').style.display = 'none';
+  document.getElementById('verif-email-wrap').style.display = 'none';
+  document.getElementById('verif-drop-zone').classList.remove('active');
+  document.getElementById('verif-csv-input').value = '';
+  verif_falta_dados = [];
+
+  document.getElementById('modal-verificacao').classList.add('open');
+}
+
+function fecharVerificacao() {
+  document.getElementById('modal-verificacao').classList.remove('open');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const modalVerif = document.getElementById('modal-verificacao');
+  if (modalVerif) {
+    modalVerif.addEventListener('click', function(e) {
+      if (e.target === this) fecharVerificacao();
+    });
+  }
+  const csvInput = document.getElementById('verif-csv-input');
+  if (csvInput) {
+    csvInput.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      document.getElementById('verif-drop-zone').classList.add('active');
+      processarCSVeFatura(file);
+    });
+  }
+});
+
+async function processarCSVeFatura(file) {
+  const texto = await lerFicheiroTexto(file);
+  const linhas = texto.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+
+  if (linhas.length < 2) {
+    alert('Ficheiro CSV inválido ou vazio.');
+    return;
+  }
+
+  // Parse CSV com separador ;
+  const header = linhas[0].split(';').map(h => h.replace(/"/g, '').trim());
+  const idxAtcudNr  = header.findIndex(h => h.includes('Fatura') && h.includes('ATCUD'));
+  const idxEmitente = header.findIndex(h => h === 'Emitente');
+  const idxData     = header.findIndex(h => h.includes('Data'));
+  const idxTotal    = header.findIndex(h => h === 'Total');
+
+  if (idxAtcudNr < 0 || idxEmitente < 0) {
+    alert('Formato do CSV não reconhecido. Certifica-te que exportaste do portal e-Fatura.');
+    return;
+  }
+
+  const faturas_efatura = [];
+  for (let i = 1; i < linhas.length; i++) {
+    const cols = parsearLinhaCSV(linhas[i]);
+    if (!cols || cols.length < 3) continue;
+
+    const nr_atcud = (cols[idxAtcudNr] || '').trim();
+    const partes   = nr_atcud.split(' / ');
+    const atcud    = partes.length === 2 ? partes[1].trim() : null;
+    if (!atcud) continue;
+
+    const emitente = (cols[idxEmitente] || '').trim();
+    const partes_e = emitente.split(' - ', 2);
+    const nome_em  = partes_e.length === 2 ? partes_e[1].trim() : emitente;
+
+    faturas_efatura.push({
+      atcud,
+      nome:  nome_em,
+      data:  idxData  >= 0 ? (cols[idxData]  || '').trim() : '',
+      total: idxTotal >= 0 ? (cols[idxTotal] || '').trim() : '',
+    });
+  }
+
+  if (!faturas_efatura.length) {
+    alert('Nenhuma fatura encontrada no CSV.');
+    return;
+  }
+
+  // Ir buscar ATCUDs registados no Firestore para este cliente
+  const mes = document.getElementById('verif-mes').value; // YYYY-MM
+  await reconciliarFaturas(faturas_efatura, mes);
+}
+
+async function reconciliarFaturas(faturas_efatura, mes) {
+  let atcuds_registados = new Set();
+
+  try {
+    const res = await apiGet('/faturas/' + verif_cliente_token + '?mes=' + mes);
+    (res.faturas || []).forEach(f => atcuds_registados.add(f.atcud));
+  } catch(e) {
+    // endpoint ainda não existe — por agora trata tudo como em falta
+    console.warn('Endpoint /faturas não disponível:', e.message);
+  }
+
+  const entregues = faturas_efatura.filter(f => atcuds_registados.has(f.atcud));
+  const em_falta  = faturas_efatura.filter(f => !atcuds_registados.has(f.atcud));
+
+  verif_falta_dados = em_falta;
+
+  // Actualizar UI
+  document.getElementById('verif-total').textContent = faturas_efatura.length;
+  document.getElementById('verif-ok').textContent    = entregues.length;
+  document.getElementById('verif-falta').textContent = em_falta.length;
+
+  // Listas
+  renderVerifLista('verif-lista-ok', entregues, '✓');
+  renderVerifLista('verif-lista-falta', em_falta, '✗');
+
+  document.getElementById('verif-entregues-wrap').style.display = entregues.length ? 'block' : 'none';
+  document.getElementById('verif-falta-wrap').style.display     = em_falta.length  ? 'block' : 'none';
+  document.getElementById('verif-resultados').style.display     = 'block';
+
+  if (em_falta.length > 0) {
+    gerarPreviewEmail(em_falta, mes);
+    document.getElementById('verif-email-wrap').style.display   = 'block';
+    document.getElementById('btn-enviar-email').style.display   = 'block';
+  }
+}
+
+function renderVerifLista(id, faturas, icone) {
+  const el = document.getElementById(id);
+  if (!faturas.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text-dim);padding:8px 0;">Nenhuma</div>'; return; }
+  el.innerHTML = faturas.map(f => `
+    <div class="verif-item">
+      <span class="verif-item-icon">${icone}</span>
+      <span class="verif-item-nome">${f.nome}</span>
+      <span class="verif-item-data">${formatarDataISO(f.data)}</span>
+      <span class="verif-item-total">${f.total}</span>
+    </div>
+  `).join('');
+}
+
+function gerarPreviewEmail(em_falta, mes) {
+  const [ano, m] = mes.split('-');
+  const meses_pt = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+  const mes_nome = meses_pt[parseInt(m) - 1] + ' de ' + ano;
+
+  const lista = em_falta.map((f, i) =>
+    `   ${i+1}. ${f.nome}\n      Data: ${formatarDataISO(f.data)}    Valor: ${f.total}`
+  ).join('\n');
+
+  const empresa_contabilista = contabilista?.nome || 'O seu Contabilista';
+
+  const email = `Assunto: Faturas em falta — ${mes_nome}
+
+Exmo(a). Sr(a),
+
+Vimos por este meio solicitar o envio das seguintes faturas referentes ao mês de ${mes_nome}, as quais ainda não foram entregues para efeitos de contabilização:
+
+${lista}
+
+Solicita-se que proceda ao envio das referidas faturas através do link FaturaScan, o mais brevemente possível.
+
+Para qualquer esclarecimento, não hesite em contactar-nos.
+
+Com os melhores cumprimentos,
+${empresa_contabilista}`;
+
+  document.getElementById('verif-email-preview').textContent = email;
+  return email;
+}
+
+function enviarEmailFaturasFalta() {
+  const mes      = document.getElementById('verif-mes').value;
+  const email_cl = verif_cliente_email;
+  const texto    = document.getElementById('verif-email-preview').textContent;
+  const linhas   = texto.split('\n');
+  const assunto  = linhas[0].replace('Assunto: ', '').trim();
+  const corpo    = linhas.slice(2).join('\n').trim();
+
+  const mailto = `mailto:${email_cl}?subject=${encodeURIComponent(assunto)}&body=${encodeURIComponent(corpo)}`;
+  window.location.href = mailto;
+}
+
+// ── UTILS VERIFICAÇÃO ────────────────────────────────────────
+function lerFicheiroTexto(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = e => resolve(e.target.result);
+    reader.onerror = reject;
+    reader.readAsText(file, 'UTF-8');
+  });
+}
+
+function parsearLinhaCSV(linha) {
+  const cols = [];
+  let atual = '';
+  let dentro_aspas = false;
+  for (let i = 0; i < linha.length; i++) {
+    const c = linha[i];
+    if (c === '"') { dentro_aspas = !dentro_aspas; }
+    else if (c === ';' && !dentro_aspas) { cols.push(atual); atual = ''; }
+    else { atual += c; }
+  }
+  cols.push(atual);
+  return cols;
+}
+
+function formatarDataISO(data) {
+  if (!data || data.length < 10) return data || '—';
+  const [ano, mes, dia] = data.slice(0, 10).split('-');
+  return `${dia}/${mes}/${ano}`;
+}
 async function apiGet(path) {
   const res = await fetch(BACKEND + path, {
     headers: { 'Authorization': 'Bearer ' + session_token }
@@ -803,6 +1107,69 @@ async function apiDelete(path) {
   return json;
 }
 </script>
+<!-- MODAL VERIFICAÇÃO DE FATURAS -->
+<div class="modal-overlay" id="modal-verificacao">
+  <div class="modal" style="max-width:680px;">
+    <div class="modal-title" id="verif-titulo">Verificar faturas</div>
+    <div class="form-label" style="margin-bottom:8px;">Mês de referência</div>
+    <input type="month" class="form-input" id="verif-mes" style="margin-bottom:16px;">
+
+    <!-- Upload CSV -->
+    <div id="verif-upload-area">
+      <div class="verif-upload-zone" id="verif-drop-zone" onclick="document.getElementById('verif-csv-input').click()">
+        <div class="verif-upload-icon">📄</div>
+        <div class="verif-upload-label">Carrega o CSV do e-Fatura</div>
+        <div class="verif-upload-hint">Exporta em faturas.portaldasfinancas.gov.pt → Adquirente → Exportar</div>
+      </div>
+      <input type="file" id="verif-csv-input" accept=".csv" style="display:none">
+    </div>
+
+    <!-- Resultados (aparece após upload) -->
+    <div id="verif-resultados" style="display:none;">
+      <div class="verif-resumo">
+        <div class="verif-stat">
+          <div class="verif-stat-val total" id="verif-total">0</div>
+          <div class="verif-stat-label">NO E-FATURA</div>
+        </div>
+        <div class="verif-stat">
+          <div class="verif-stat-val ok" id="verif-ok">0</div>
+          <div class="verif-stat-label">ENTREGUES</div>
+        </div>
+        <div class="verif-stat">
+          <div class="verif-stat-val falta" id="verif-falta">0</div>
+          <div class="verif-stat-label">EM FALTA</div>
+        </div>
+      </div>
+
+      <div id="verif-entregues-wrap">
+        <div class="verif-section-title">✓ Entregues</div>
+        <div class="verif-lista" id="verif-lista-ok"></div>
+      </div>
+
+      <div id="verif-falta-wrap">
+        <div class="verif-section-title">✗ Em falta</div>
+        <div class="verif-lista" id="verif-lista-falta"></div>
+      </div>
+
+      <!-- Preview email -->
+      <div id="verif-email-wrap" style="display:none;">
+        <div class="verif-section-title">Email gerado</div>
+        <div class="verif-email-preview" id="verif-email-preview"></div>
+        <div style="font-size:11px;color:var(--text-dim);margin-bottom:8px;">
+          O email abrirá no teu cliente de email com os dados preenchidos.
+        </div>
+      </div>
+    </div>
+
+    <div class="verif-actions">
+      <button class="btn-fechar-verif" onclick="fecharVerificacao()">Fechar</button>
+      <button class="btn-enviar-email" id="btn-enviar-email" style="display:none;" onclick="enviarEmailFaturasFalta()">
+        ✉ Enviar email ao cliente
+      </button>
+    </div>
+  </div>
+</div>
+
 <script src="https://apis.google.com/js/api.js"></script>
 <script src="https://accounts.google.com/gsi/client"></script>
 </body>

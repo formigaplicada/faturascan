@@ -495,8 +495,7 @@
 const GAS_URL         = 'https://script.google.com/macros/s/AKfycbw7fG0bFi5K5O7hRE3ryEbibI1D0lc3PTk_RoghS5GRAbBU4CQ3dr48u23qSMXHmoqd/exec';
 const MAX_JPG_KB      = 200;
 const MAX_PDF_KB      = 500;
-const QR_ENHANCER_URL = 'https://qrenhancer2e538ffc-qrapi.functions.fnc.fr-par.scw.cloud/v1/scan';
-const QR_ENHANCER_KEY = 'sk_live_qrenhancer_miguel_2024';
+const QR_ENHANCER_URL = 'https://api.faturascan.com/v1/scan';
 
 // ── I18N ─────────────────────────────────────────────────────
 const i18n = {
@@ -898,7 +897,7 @@ async function tentarLerQRAPI(canvas) {
     const b64 = resized.toDataURL('image/jpeg', 0.85).split(',')[1];
     const resp = await fetch(QR_ENHANCER_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-API-Key': QR_ENHANCER_KEY },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ image: b64, mode: 'auto', max_time_ms: 5000, hints: { damage: 'heavy' } }),
     });
     const json = await resp.json();
